@@ -7,6 +7,15 @@
 
 ---
 
+Notes from dhoerl:
+
+* Added variable width columns using the patch file listed in the "Issues" section of the original repository. 
+* Added protective code to prevent crashes due to exact dimension matches (another original project Issue)
+* Added 'names' to each layout object to assist in debugging.
+* Modified the demo project to use variable widths (each column is 10 pixels wider than the one to the left)
+
+---
+
 ##Documentation
 Official appledoc documentation can be found at [CocoaDocs](http://cocoadocs.org/docsets/MMSpreadsheetView/).
 

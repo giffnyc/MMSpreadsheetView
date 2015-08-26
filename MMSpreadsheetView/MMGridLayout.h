@@ -28,6 +28,12 @@
 
 @interface MMGridLayout : UICollectionViewLayout
 
+/**
+ A string identifier.
+ 
+ */
+@property (nonatomic, strong) NSString *name;
+
 ///---------------------------------------
 /// @name Accessing Layout Properties
 ///---------------------------------------

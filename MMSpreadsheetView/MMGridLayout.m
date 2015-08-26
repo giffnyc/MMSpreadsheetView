@@ -34,7 +34,7 @@
 
 @implementation MMGridLayout
 {
-	CGFloat _cellSpacing;
+    CGFloat _cellSpacing;
 }
 @dynamic cellSpacing;
 
@@ -53,7 +53,7 @@
 }
 
 - (CGFloat)cellSpacing {
-	return _cellSpacing;
+    return _cellSpacing;
 }
 - (void)setCellSpacing:(CGFloat)cellSpacing {
     _cellSpacing = cellSpacing;
@@ -67,13 +67,11 @@
     self.gridColumnCount = [self.collectionView numberOfItemsInSection:0];
 
     if (!_isInitialized) {
-NSLog(@"YIKES - NO INIT!!!");
         id<UICollectionViewDelegateFlowLayout> delegate = (id)self.collectionView.delegate;
         CGSize size = [delegate collectionView:self.collectionView
                                         layout:self
                         sizeForItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:0]];
         self.itemSize = size;
-NSLog(@"SIZE %@", NSStringFromCGSize(size));
         self.isInitialized = YES;
     }
 }
@@ -83,7 +81,7 @@ NSLog(@"SIZE %@", NSStringFromCGSize(size));
         [self prepareLayout];
     }
     CGSize size = CGSizeMake(_gridColumnCount * _itemSize.width, _gridRowCount * _itemSize.height);
-	NSLog(@"CONTENT SIZE %@ col=%d row=%d", NSStringFromCGSize(size), (int)_gridColumnCount, (int)_gridRowCount);
+    NSLog(@"CONTENT SIZE %@ col=%d row=%d", NSStringFromCGSize(size), (int)_gridColumnCount, (int)_gridRowCount);
     return size;
 }
 
@@ -117,19 +115,19 @@ NSLog(@"SIZE %@", NSStringFromCGSize(size));
 - (void)prepareLayout {
     [super prepareLayout];
     self.gridRowCount = [self.collectionView numberOfSections];
-	self.gridColumnCount = [self.collectionView numberOfItemsInSection:0];
+    self.gridColumnCount = [self.collectionView numberOfItemsInSection:0];
 
 
     if (!_isInitialized) {
-		self.widths = [NSMutableArray arrayWithCapacity:_gridColumnCount];
+        self.widths = [NSMutableArray arrayWithCapacity:_gridColumnCount];
         id<UICollectionViewDelegateFlowLayout> delegate = (id)self.collectionView.delegate;
 
-		CGSize size = CGSizeMake(0, 0);
-		for (NSInteger i = 0; i < _gridColumnCount; i++) {
-			size = [delegate collectionView:self.collectionView layout:self sizeForItemAtIndexPath:[NSIndexPath indexPathForItem:i inSection:0]];
-			[_widths addObject:@(size.width + _cellSpacing)];
-		}
-		self.itemSize = size;
+        CGSize size = CGSizeMake(0, 0);
+        for (NSInteger i = 0; i < _gridColumnCount; i++) {
+            size = [delegate collectionView:self.collectionView layout:self sizeForItemAtIndexPath:[NSIndexPath indexPathForItem:i inSection:0]];
+            [_widths addObject:@(size.width + _cellSpacing)];
+        }
+        self.itemSize = size;
         self.isInitialized = YES;
     }
 }
@@ -139,10 +137,10 @@ NSLog(@"SIZE %@", NSStringFromCGSize(size));
         [self prepareLayout];
     }
 
-	float sumWidth = 0;
-	for (NSNumber *w in _widths) {
-		sumWidth += [w floatValue];
-	}
+    float sumWidth = 0;
+    for (NSNumber *w in _widths) {
+        sumWidth += [w floatValue];
+    }
 
     CGSize size = CGSizeMake(sumWidth, _gridRowCount * _itemSize.height);
     return size;
@@ -152,23 +150,22 @@ NSLog(@"SIZE %@", NSStringFromCGSize(size));
     NSUInteger startRow = floorf(rect.origin.y / _itemSize.height);
     NSUInteger endRow = MIN(_gridRowCount - 1, ceilf(CGRectGetMaxY(rect) / _itemSize.height));
 
-	NSInteger startCol = -1;
-	NSInteger endCol = 0;
-	float widthsum = 0;
-	for (int i = 0; i < _gridColumnCount; i++) {
-		widthsum += [_widths[i] floatValue];
+    NSInteger startCol = -1;
+    NSInteger endCol = 0;
+    float widthsum = 0;
+    for (int i = 0; i < _gridColumnCount; i++) {
+        widthsum += [_widths[i] floatValue];
 
-		if (widthsum > rect.origin.x && startCol < 0) {
-			startCol = i;
-		}
+        if (widthsum > rect.origin.x && startCol < 0) {
+            startCol = i;
+        }
 
-		if (widthsum >= CGRectGetMaxX(rect)) {
-			endCol = i+1;
-			break;
-		}
-	}
-	endCol = MIN(_gridColumnCount - 1, endCol);
-
+        if (widthsum >= CGRectGetMaxX(rect)) {
+            endCol = i+1;
+            break;
+        }
+    }
+    endCol = MIN(_gridColumnCount - 1, endCol);
 
     NSParameterAssert(_gridRowCount > 0);
     NSParameterAssert(_gridColumnCount > 0);
@@ -186,11 +183,11 @@ NSLog(@"SIZE %@", NSStringFromCGSize(size));
 
 - (UICollectionViewLayoutAttributes *)layoutAttributesForItemAtIndexPath:(NSIndexPath *)indexPath {
     UICollectionViewLayoutAttributes *attributes = [UICollectionViewLayoutAttributes layoutAttributesForCellWithIndexPath:indexPath];
-	float widthsum = 0;
-	for (int i = 0; i < indexPath.item; i++) {
-		widthsum += [_widths[i] floatValue];
-	}
-	CGRect frame = CGRectMake(widthsum, indexPath.section * _itemSize.height, [_widths[indexPath.item] floatValue] - _cellSpacing, _itemSize.height-_cellSpacing);
+    float widthsum = 0;
+    for (int i = 0; i < indexPath.item; i++) {
+        widthsum += [_widths[i] floatValue];
+    }
+    CGRect frame = CGRectMake(widthsum, indexPath.section * _itemSize.height, [_widths[indexPath.item] floatValue] - _cellSpacing, _itemSize.height-_cellSpacing);
     attributes.frame = frame;
     return attributes;
 }

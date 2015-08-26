@@ -399,20 +399,16 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 - (void)setDataSource:(id<MMSpreadsheetViewDataSource>)dataSource {
     _dataSource = dataSource;
     if (self.upperLeftCollectionView) {
-NSLog(@"UL");
-        [self initializeCollectionViewLayoutItemSize:self.upperLeftCollectionView];
+        [self initializeCollectionViewLayoutItemSize:self.upperLeftCollectionView name:@"Left Corner"];
     }
     if (self.upperRightCollectionView) {
-NSLog(@"UR");
-        [self initializeCollectionViewLayoutItemSize:self.upperRightCollectionView];
+        [self initializeCollectionViewLayoutItemSize:self.upperRightCollectionView name:@"Column Labels"];
     }
     if (self.lowerLeftCollectionView) {
-NSLog(@"LL");
-        [self initializeCollectionViewLayoutItemSize:self.lowerLeftCollectionView];
+        [self initializeCollectionViewLayoutItemSize:self.lowerLeftCollectionView name:@"Row Labels"];
     }
     if (self.lowerRightCollectionView) {
-NSLog(@"LR");
-        [self initializeCollectionViewLayoutItemSize:self.lowerRightCollectionView];
+        [self initializeCollectionViewLayoutItemSize:self.lowerRightCollectionView name:@"Data Cells"];
     }
 
     // Validate dataSource & header configuration
@@ -423,9 +419,10 @@ NSLog(@"LR");
     NSAssert(self.headerRowCount < maxRows, @"Invalid configuration: number of header rows must be less than (dataSource) numberOfRowsInSpreadsheetView");
 }
 
-- (void)initializeCollectionViewLayoutItemSize:(UICollectionView *)collectionView {
+- (void)initializeCollectionViewLayoutItemSize:(UICollectionView *)collectionView name:(NSString*)name {
     NSIndexPath *indexPathZero = [NSIndexPath indexPathForItem:0 inSection:0];
     MMGridLayout *layout = (MMGridLayout *)collectionView.collectionViewLayout;
+    layout.name = name;
     CGSize size = [self collectionView:collectionView
                                 layout:layout
                 sizeForItemAtIndexPath:indexPathZero];
@@ -483,8 +480,8 @@ NSLog(@"LR");
             if (indicatorHeight < MMSpreadsheetViewScrollIndicatorMinimum) {
                 indicatorHeight = MMSpreadsheetViewScrollIndicatorMinimum;
             }
-			CGFloat divideByZeroOffset = contentSize.height == collectionViewFrame.size.height ? 1.0f : 0.0f;
-			CGFloat indicatorOffsetY = collectionView.contentOffset.y / (contentSize.height - collectionViewFrame.size.height + divideByZeroOffset) * (scrollIndicator.frame.size.height - indicatorHeight);
+            CGFloat divideByZeroOffset = fabs(contentSize.height - collectionViewFrame.size.height) < 1.0 ? 1.0f : 0.0f;
+            CGFloat indicatorOffsetY = collectionView.contentOffset.y / (contentSize.height - collectionViewFrame.size.height + divideByZeroOffset) * (scrollIndicator.frame.size.height - indicatorHeight);
             indicatorView.frame = CGRectMake(0.0f,
                                              indicatorOffsetY,
                                              MMSpreadsheetViewScrollIndicatorWidth,
@@ -504,12 +501,12 @@ NSLog(@"LR");
         if (collectionView.frame.size.width > contentSize.width) {
             indicatorView.frame = CGRectZero;
         } else {
-			CGFloat indicatorWidth = collectionViewFrame.size.width/contentSize.width * scrollIndicator.frame.size.width;
+            CGFloat indicatorWidth = collectionViewFrame.size.width/contentSize.width * scrollIndicator.frame.size.width;
             if (indicatorWidth < MMSpreadsheetViewScrollIndicatorMinimum) {
                 indicatorWidth = MMSpreadsheetViewScrollIndicatorMinimum;
             }
-			CGFloat divideByZeroOffset = contentSize.width == collectionViewFrame.size.width ? 1.0f : 0.0f;
-			CGFloat indicatorOffsetX = collectionView.contentOffset.x / (contentSize.width - collectionViewFrame.size.width + divideByZeroOffset) * (scrollIndicator.frame.size.width-indicatorWidth);
+            CGFloat divideByZeroOffset = fabs(contentSize.width - collectionViewFrame.size.width) ? 1.0f : 0.0f;
+            CGFloat indicatorOffsetX = collectionView.contentOffset.x / (contentSize.width - collectionViewFrame.size.width + divideByZeroOffset) * (scrollIndicator.frame.size.width-indicatorWidth);
             indicatorView.frame = CGRectMake(indicatorOffsetX,
                                              0.0f,
                                              indicatorWidth,

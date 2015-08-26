@@ -33,9 +33,9 @@
 ///---------------------------------------
 
 /**
- The size for each cell in the grid.
+ The height for each cell in the grid.
  
- @discussion This will be set either by `MMSpreadsheetView` or `MMGridLayout` using a delegate call to collectionView:layout:sizeForItemAtIndexPath: via the `setItemSize:` method. The layout is invalidated when the itemSize is changed.
+ @discussion This will be set either by `MMSpreadsheetView` or `MMGridLayout` using a delegate call to collectionView:layout:sizeForItemAtIndexPath: via the `setItemHeight:` method. The layout is invalidated when the itemHeight is changed.
  */
 @property (nonatomic, assign) CGSize itemSize;
 

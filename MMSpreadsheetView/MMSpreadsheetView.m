@@ -399,15 +399,19 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 - (void)setDataSource:(id<MMSpreadsheetViewDataSource>)dataSource {
     _dataSource = dataSource;
     if (self.upperLeftCollectionView) {
+NSLog(@"UL");
         [self initializeCollectionViewLayoutItemSize:self.upperLeftCollectionView];
     }
     if (self.upperRightCollectionView) {
+NSLog(@"UR");
         [self initializeCollectionViewLayoutItemSize:self.upperRightCollectionView];
     }
     if (self.lowerLeftCollectionView) {
+NSLog(@"LL");
         [self initializeCollectionViewLayoutItemSize:self.lowerLeftCollectionView];
     }
     if (self.lowerRightCollectionView) {
+NSLog(@"LR");
         [self initializeCollectionViewLayoutItemSize:self.lowerRightCollectionView];
     }
 
@@ -471,7 +475,7 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
         UICollectionView *collectionView = self.lowerRightCollectionView;
         CGSize contentSize = collectionView.collectionViewLayout.collectionViewContentSize;
         CGRect collectionViewFrame = collectionView.frame;
-        
+
         if (collectionViewFrame.size.height > contentSize.height) {
             indicatorView.frame = CGRectZero;
         } else {
@@ -479,7 +483,8 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
             if (indicatorHeight < MMSpreadsheetViewScrollIndicatorMinimum) {
                 indicatorHeight = MMSpreadsheetViewScrollIndicatorMinimum;
             }
-            CGFloat indicatorOffsetY = collectionView.contentOffset.y / (contentSize.height - collectionViewFrame.size.height) * (scrollIndicator.frame.size.height - indicatorHeight);
+			CGFloat divideByZeroOffset = contentSize.height == collectionViewFrame.size.height ? 1.0f : 0.0f;
+			CGFloat indicatorOffsetY = collectionView.contentOffset.y / (contentSize.height - collectionViewFrame.size.height + divideByZeroOffset) * (scrollIndicator.frame.size.height - indicatorHeight);
             indicatorView.frame = CGRectMake(0.0f,
                                              indicatorOffsetY,
                                              MMSpreadsheetViewScrollIndicatorWidth,
@@ -499,11 +504,12 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
         if (collectionView.frame.size.width > contentSize.width) {
             indicatorView.frame = CGRectZero;
         } else {
-            CGFloat indicatorWidth = collectionViewFrame.size.width/contentSize.width * scrollIndicator.frame.size.width;
+			CGFloat indicatorWidth = collectionViewFrame.size.width/contentSize.width * scrollIndicator.frame.size.width;
             if (indicatorWidth < MMSpreadsheetViewScrollIndicatorMinimum) {
                 indicatorWidth = MMSpreadsheetViewScrollIndicatorMinimum;
             }
-            CGFloat indicatorOffsetX = collectionView.contentOffset.x / (contentSize.width - collectionViewFrame.size.width) * (scrollIndicator.frame.size.width-indicatorWidth);
+			CGFloat divideByZeroOffset = contentSize.width == collectionViewFrame.size.width ? 1.0f : 0.0f;
+			CGFloat indicatorOffsetX = collectionView.contentOffset.x / (contentSize.width - collectionViewFrame.size.width + divideByZeroOffset) * (scrollIndicator.frame.size.width-indicatorWidth);
             indicatorView.frame = CGRectMake(indicatorOffsetX,
                                              0.0f,
                                              indicatorWidth,

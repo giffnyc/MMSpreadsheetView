@@ -18,7 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#import <Foundation/Foundation.h>
+//#import <UIKit/Foundation.h> // Not sufficient for Swift, as the categories for row/section are missing
+#import <UIKit/UIKit.h>
 
 /**
  This category renames section and row values from NSIndexPath to reduce confusion when referring to a particular cell in a `MMSpreadsheetView`.

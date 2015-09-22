@@ -22,7 +22,7 @@
 
 @implementation MMTopRowCell
 
-- (id)initWithFrame:(CGRect)frame {
+- (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
         CGRect rect = CGRectMake(0.0f, 0.0f, frame.size.width, frame.size.height);

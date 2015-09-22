@@ -38,7 +38,7 @@
 }
 @dynamic cellSpacing;
 
-- (id)init {
+- (instancetype)init {
     self = [super init];
     if (self) {
         _cellSpacing = 1.0f;
@@ -67,7 +67,7 @@
     self.gridColumnCount = [self.collectionView numberOfItemsInSection:0];
 
     if (!_isInitialized) {
-        id<UICollectionViewDelegateFlowLayout> delegate = (id)self.collectionView.delegate;
+        id<UICollectionViewDelegateFlowLayout> delegate = (instancetype)self.collectionView.delegate;
         CGSize size = [delegate collectionView:self.collectionView
                                         layout:self
                         sizeForItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:0]];

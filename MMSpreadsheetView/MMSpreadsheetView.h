@@ -20,6 +20,23 @@
 
 #import <UIKit/UIKit.h>
 
+#if __has_feature(nullability)
+NS_ASSUME_NONNULL_BEGIN
+#else
+#define nullable
+#endif
+
+#if __has_feature(objc_generics)
+#define NSArrayOf(VALUE) NSArray<VALUE>
+#define NSDictionaryOf(KEY, VALUE) NSDictionary<KEY, VALUE>
+#define NSSetOf(VALUE) NSSet<VALUE>
+#else
+#define NSArrayOf(VALUE) NSArray
+#define NSDictionaryOf(KEY, VALUE) NSDictionary
+#define NSSetOf(VALUE) NSSet
+#endif
+
+
 @class MMSpreadsheetView;
 
 /**
@@ -229,10 +246,20 @@
  @param headerColumnCount The number of header **columns** on the left side of the view.
  @param frame The frame rectangle for the spreadsheet view, measured in points. The origin of the frame is relative to the superview in which you plan to add it. This frame is passed to the superclass during initialization.
  
- @return An initialized spreadsheet view object or nil if the object could not be created.
+ @return An initialized spreadsheet view object.
  
  */
-- (id)initWithNumberOfHeaderRows:(NSUInteger)headerRowCount numberOfHeaderColumns:(NSUInteger)headerColumnCount frame:(CGRect)frame;
+- (instancetype)initWithNumberOfHeaderRows:(NSUInteger)headerRowCount numberOfHeaderColumns:(NSUInteger)headerColumnCount frame:(CGRect)frame;
+
+
+/**
+ Call this in "viewDidLoad" when using "initWithCoder".
+ 
+ @param headerRowCount The number of header **rows** at the top of the view.
+ @param headerColumnCount The number of header **columns** on the left side of the view.
+
+ */
+- (void)commonInitWithNumberOfHeaderRows:(NSUInteger)headerRowCount numberOfHeaderColumns:(NSUInteger)headerColumnCount;
 
 /**
  Register a class for use in creating new spreadsheet view cells.
@@ -337,4 +364,16 @@
  */
 @property (nonatomic, assign) BOOL bounces;
 
+/**
+ A Boolean value that determines whether scrolling is disabled in a particular direction.
+ 
+ @discussion If this property is NO, scrolling is permitted in both horizontal and vertical directions. If this property is YES and the user begins dragging in one general direction (horizontally or vertically), the scroll view disables scrolling in the other direction. If the drag direction is diagonal, then scrolling will not be locked and the user can drag in any direction until the drag completes. The default value is NO.
+ */
+@property (nonatomic, assign) BOOL directionalLockEnabled;
+
 @end
+
+#if __has_feature(nullability)
+NS_ASSUME_NONNULL_END
+#endif
+

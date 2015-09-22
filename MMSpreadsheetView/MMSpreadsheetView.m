@@ -76,42 +76,56 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 
 @implementation MMSpreadsheetView
 
-- (id)init {
+- (instancetype)init {
     return [self initWithNumberOfHeaderRows:0 numberOfHeaderColumns:0 frame:CGRectZero];
 }
 
-- (id)initWithFrame:(CGRect)frame {
-    return [self initWithNumberOfHeaderRows:0 numberOfHeaderColumns:0 frame:frame];
+- (instancetype)initWithFrame:(CGRect)frame {
+	if((self = [super initWithFrame:frame])) {
+		[self commonInitWithNumberOfHeaderRows:0 numberOfHeaderColumns:0];
+	}
+    return self;
+}
+
+- (instancetype)initWithCoder:(NSCoder *)coder {
+	if((self = [super initWithCoder:coder])) {
+		[self commonInitWithNumberOfHeaderRows:0 numberOfHeaderColumns:0];
+	}
+
+    return self;
 }
 
 #pragma mark - MMSpreadsheetView designated initializer
 
-- (id)initWithNumberOfHeaderRows:(NSUInteger)headerRowCount numberOfHeaderColumns:(NSUInteger)headerColumnCount frame:(CGRect)frame {
-    self = [super initWithFrame:frame];
-    if (self) {
-        _scrollIndicatorInsets = UIEdgeInsetsZero;
-        _showsVerticalScrollIndicator = YES;
-        _showsHorizontalScrollIndicator = YES;
-        _headerRowCount = headerRowCount;
-        _headerColumnCount = headerColumnCount;
-        
-        if (headerColumnCount == 0 && headerRowCount == 0) {
-            _spreadsheetHeaderConfiguration = MMSpreadsheetHeaderConfigurationNone;
-        }
-        else if (headerColumnCount > 0 && headerRowCount == 0) {
-            _spreadsheetHeaderConfiguration = MMSpreadsheetHeaderConfigurationColumnOnly;
-        }
-        else if (headerColumnCount == 0 && headerRowCount > 0) {
-            _spreadsheetHeaderConfiguration = MMSpreadsheetHeaderConfigurationRowOnly;
-        }
-        else if (headerColumnCount > 0 && headerRowCount > 0) {
-            _spreadsheetHeaderConfiguration = MMSpreadsheetHeaderConfigurationBoth;
-        }
-        self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        self.backgroundColor = [UIColor grayColor];
-        [self setupSubviews];
-    }
+- (instancetype)initWithNumberOfHeaderRows:(NSUInteger)headerRowCount numberOfHeaderColumns:(NSUInteger)headerColumnCount frame:(CGRect)frame {
+    if((self = [super initWithFrame:frame])) {
+		[self commonInitWithNumberOfHeaderRows:headerRowCount numberOfHeaderColumns:headerColumnCount];
+	}
     return self;
+}
+
+- (void)commonInitWithNumberOfHeaderRows:(NSUInteger)headerRowCount numberOfHeaderColumns:(NSUInteger)headerColumnCount {
+	_scrollIndicatorInsets = UIEdgeInsetsZero;
+	_showsVerticalScrollIndicator = YES;
+	_showsHorizontalScrollIndicator = YES;
+	_headerRowCount = headerRowCount;
+	_headerColumnCount = headerColumnCount;
+	
+	if (headerColumnCount == 0 && headerRowCount == 0) {
+		_spreadsheetHeaderConfiguration = MMSpreadsheetHeaderConfigurationNone;
+	}
+	else if (headerColumnCount > 0 && headerRowCount == 0) {
+		_spreadsheetHeaderConfiguration = MMSpreadsheetHeaderConfigurationColumnOnly;
+	}
+	else if (headerColumnCount == 0 && headerRowCount > 0) {
+		_spreadsheetHeaderConfiguration = MMSpreadsheetHeaderConfigurationRowOnly;
+	}
+	else if (headerColumnCount > 0 && headerRowCount > 0) {
+		_spreadsheetHeaderConfiguration = MMSpreadsheetHeaderConfigurationBoth;
+	}
+	self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+	self.backgroundColor = [UIColor grayColor];
+	[self setupSubviews];
 }
 
 #pragma mark - Public Functions
@@ -393,6 +407,29 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
     self.lowerLeftCollectionView.bounces = bounces;
     self.lowerRightCollectionView.bounces = bounces;
 }
+
+//- (void)setHorizontalBounce:(BOOL)bounces {
+//    self.upperLeftCollectionView.alwaysBounceHorizontal = bounces;
+//    self.upperRightCollectionView.alwaysBounceHorizontal = bounces;
+//    self.lowerLeftCollectionView.alwaysBounceHorizontal = bounces;
+//    self.lowerRightCollectionView.alwaysBounceHorizontal = bounces;
+//}
+//- (void)setVerticalBounce:(BOOL)bounces {
+//    self.upperLeftCollectionView.alwaysBounceVertical = bounces;
+//    self.upperRightCollectionView.alwaysBounceVertical = bounces;
+//    self.lowerLeftCollectionView.alwaysBounceVertical = bounces;
+//    self.lowerRightCollectionView.alwaysBounceVertical = bounces;
+//}
+
+- (void)setDirectionalLockEnabled:(BOOL)enabled {
+    _directionalLockEnabled = enabled;
+    self.upperLeftCollectionView.directionalLockEnabled = enabled;
+    self.upperRightCollectionView.directionalLockEnabled = enabled;
+    self.lowerLeftCollectionView.directionalLockEnabled = enabled;
+    self.lowerRightCollectionView.directionalLockEnabled = enabled;
+	//self.controllingScrollView.directionalLockEnabled = enabled;
+}
+
 
 #pragma mark - DataSource property setter
 

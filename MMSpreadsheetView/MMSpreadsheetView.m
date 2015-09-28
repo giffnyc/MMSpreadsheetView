@@ -347,12 +347,12 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
     self.verticalScrollIndicator.frame = CGRectMake(self.frame.size.width - MMSpreadsheetViewScrollIndicatorWidth - self.scrollIndicatorInsets.right - MMScrollIndicatorDefaultInsetSpace,
                                                     self.scrollIndicatorInsets.top + MMSpreadsheetViewScrollIndicatorSpace,
                                                     MMSpreadsheetViewScrollIndicatorWidth,
-                                                    self.frame.size.height - 4*MMSpreadsheetViewScrollIndicatorSpace);
+                                                    self.frame.size.height - self.scrollIndicatorInsets.top - 4*MMSpreadsheetViewScrollIndicatorSpace);
     [self updateVerticalScrollIndicator];
 
     self.horizontalScrollIndicator.frame = CGRectMake(self.scrollIndicatorInsets.left + MMSpreadsheetViewScrollIndicatorSpace,
                                                       self.frame.size.height - MMSpreadsheetViewScrollIndicatorWidth - self.scrollIndicatorInsets.bottom - MMScrollIndicatorDefaultInsetSpace,
-                                                      self.frame.size.width - 4*MMSpreadsheetViewScrollIndicatorSpace,
+                                                      self.frame.size.width - self.scrollIndicatorInsets.left - 4*MMSpreadsheetViewScrollIndicatorSpace,
                                                       MMSpreadsheetViewScrollIndicatorWidth);
     [self updateHorizontalScrollIndicator];
 }

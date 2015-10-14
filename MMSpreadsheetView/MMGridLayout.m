@@ -26,9 +26,6 @@
 @property (nonatomic, assign) NSInteger gridRowCount;
 @property (nonatomic, assign) NSInteger gridColumnCount;
 @property (nonatomic, assign) BOOL isInitialized;
-#ifndef ORIGINAL
-@property (nonatomic, strong) NSMutableArray *widths;
-#endif
 
 @end
 
@@ -42,7 +39,7 @@
     self = [super init];
     if (self) {
         _cellSpacing = 1.0f;
-        _itemSize = CGSizeMake(120.0f, 120.0f);
+        _itemSize = CGSizeMake(120.0f+_cellSpacing, 120.0f+_cellSpacing);
     }
     return self;
 }
@@ -81,7 +78,6 @@
         [self prepareLayout];
     }
     CGSize size = CGSizeMake(_gridColumnCount * _itemSize.width, _gridRowCount * _itemSize.height);
-    NSLog(@"CONTENT SIZE %@ col=%d row=%d", NSStringFromCGSize(size), (int)_gridColumnCount, (int)_gridRowCount);
     return size;
 }
 
@@ -143,6 +139,7 @@
     }
 
     CGSize size = CGSizeMake(sumWidth, _gridRowCount * _itemSize.height);
+	// NSLog(@"CONTENT SIZE %@ col=%d row=%d", NSStringFromCGSize(size), (int)_gridColumnCount, (int)_gridRowCount);
     return size;
 }
 

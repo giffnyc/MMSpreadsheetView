@@ -82,14 +82,22 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 
 - (instancetype)initWithFrame:(CGRect)frame {
 	if((self = [super initWithFrame:frame])) {
-		[self commonInitWithNumberOfHeaderRows:0 numberOfHeaderColumns:0];
+		// Apple bug iOS9.1  (weirdness) - the first view gets hosed by iOS during view loading/presentation
+		UIView *v = [UIView new];
+		[self addSubview:v];
+		// Call it in viewDidLoad
+		//[self commonInitWithNumberOfHeaderRows:0 numberOfHeaderColumns:0];
 	}
     return self;
 }
 
 - (instancetype)initWithCoder:(NSCoder *)coder {
 	if((self = [super initWithCoder:coder])) {
-		[self commonInitWithNumberOfHeaderRows:0 numberOfHeaderColumns:0];
+		// Apple bug iOS9.1 (weirdness) - the first view gets hosed by iOS during view loading/presentation
+		UIView *v = [UIView new];
+		[self addSubview:v];
+		// Call it in viewDidLoad
+		//[self commonInitWithNumberOfHeaderRows:0 numberOfHeaderColumns:0];
 	}
 
     return self;
@@ -99,6 +107,11 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 
 - (instancetype)initWithNumberOfHeaderRows:(NSUInteger)headerRowCount numberOfHeaderColumns:(NSUInteger)headerColumnCount frame:(CGRect)frame {
     if((self = [super initWithFrame:frame])) {
+
+		// Apple bug iOS9.1 (weirdness) - the first view gets hosed by iOS during view loading/presentation - may not be necessary here
+		UIView *v = [UIView new];
+		[self addSubview:v];
+
 		[self commonInitWithNumberOfHeaderRows:headerRowCount numberOfHeaderColumns:headerColumnCount];
 	}
     return self;
@@ -407,29 +420,27 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
     self.lowerLeftCollectionView.bounces = bounces;
     self.lowerRightCollectionView.bounces = bounces;
 }
-
-//- (void)setHorizontalBounce:(BOOL)bounces {
-//    self.upperLeftCollectionView.alwaysBounceHorizontal = bounces;
-//    self.upperRightCollectionView.alwaysBounceHorizontal = bounces;
-//    self.lowerLeftCollectionView.alwaysBounceHorizontal = bounces;
-//    self.lowerRightCollectionView.alwaysBounceHorizontal = bounces;
-//}
-//- (void)setVerticalBounce:(BOOL)bounces {
-//    self.upperLeftCollectionView.alwaysBounceVertical = bounces;
-//    self.upperRightCollectionView.alwaysBounceVertical = bounces;
-//    self.lowerLeftCollectionView.alwaysBounceVertical = bounces;
-//    self.lowerRightCollectionView.alwaysBounceVertical = bounces;
-//}
-
+- (void)setHorizontalBounce:(BOOL)bounces {
+	_horizontalBounce = bounces;
+    self.upperLeftCollectionView.alwaysBounceHorizontal = bounces;
+    self.upperRightCollectionView.alwaysBounceHorizontal = bounces;
+    self.lowerLeftCollectionView.alwaysBounceHorizontal = bounces;
+    self.lowerRightCollectionView.alwaysBounceHorizontal = bounces;
+}
+- (void)setVerticalBounce:(BOOL)bounces {
+	_verticalBounce = bounces;
+    self.upperLeftCollectionView.alwaysBounceVertical = NO;
+    self.upperRightCollectionView.alwaysBounceVertical = NO;
+    self.lowerLeftCollectionView.alwaysBounceVertical = bounces;
+    self.lowerRightCollectionView.alwaysBounceVertical = bounces;
+}
 - (void)setDirectionalLockEnabled:(BOOL)enabled {
     _directionalLockEnabled = enabled;
     self.upperLeftCollectionView.directionalLockEnabled = enabled;
     self.upperRightCollectionView.directionalLockEnabled = enabled;
     self.lowerLeftCollectionView.directionalLockEnabled = enabled;
     self.lowerRightCollectionView.directionalLockEnabled = enabled;
-	//self.controllingScrollView.directionalLockEnabled = enabled;
 }
-
 
 #pragma mark - DataSource property setter
 
@@ -641,6 +652,7 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
     
     switch (collectionView.tag) {
         case MMSpreadsheetViewCollectionUpperLeft:
+            // Don't think we need to do anything here
             break;
             
         case MMSpreadsheetViewCollectionUpperRight:
@@ -750,7 +762,7 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
             NSAssert(NO, @"What have you done?");
             break;
     }
-    
+
     return items;
 }
 
@@ -921,10 +933,13 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 }
 
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
+	self.isScrolling = YES;
+
     [self setScrollEnabledValue:NO scrollView:scrollView];
     
     if (self.controllingScrollView != scrollView) {
-        
+		// TOD0: WTF does this do????
+		[self.upperLeftCollectionView setContentOffset:self.upperLeftCollectionView.contentOffset animated:NO];
         [self.lowerLeftCollectionView setContentOffset:self.lowerLeftCollectionView.contentOffset animated:NO];
         [self.upperRightCollectionView setContentOffset:self.upperRightCollectionView.contentOffset animated:NO];
         [self.lowerRightCollectionView setContentOffset:self.lowerRightCollectionView.contentOffset animated:NO];
@@ -959,6 +974,9 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
                 self.lowerLeftContainerView.userInteractionEnabled = NO;
                 self.upperRightBouncing = YES;
             }
+			else if(self.snapToGrid) {
+				*targetContentOffset = [self alignOffset:toffset collectionView:self.upperRightCollectionView];
+			}
             break;
         }
             
@@ -973,9 +991,49 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
                 self.lowerLeftContainerView.userInteractionEnabled = NO;
                 self.lowerRightBouncing = YES;
             }
+			else if(self.snapToGrid) {
+				*targetContentOffset = [self alignOffset:toffset collectionView:self.lowerRightCollectionView];
+			}
             break;
         }
     }
+	NSLog(@"%@scrollViewDidEndDragging : withVelocity", self.isScrolling ? @"" : @"-");
+}
+
+- (CGPoint)alignOffset:(CGPoint)pt collectionView:(UICollectionView *)collectionView {
+	if(collectionView.numberOfSections == 0) {
+		// Don't think this is possible but just in case...
+		return pt;
+	}
+
+    MMGridLayout *layout = (MMGridLayout *)collectionView.collectionViewLayout;
+	CGFloat height = layout.itemSize.height;
+	CGFloat y = round(pt.y/height) * height;
+	CGFloat x = pt.x;
+
+	double rx=0;
+	double lx=0;
+	int columns = (int)[collectionView numberOfItemsInSection:0];
+	for(int i=0; i<columns; ++i) {
+		double width = [layout.widths[i] doubleValue];
+		rx += width;
+		if(pt.x < rx) {
+			double rounder = round((pt.x - lx)/width) * width;
+			x = lx + rounder;
+			break;
+		}
+		lx = rx;
+	}
+	CGPoint r = CGPointMake(x, y);
+	return r;
+}
+
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate
+{
+	if(!decelerate) {
+		[self scrollViewDidStop:scrollView];
+	}
+	NSLog(@"%@scrollViewDidEndDragging : willDecelerate", self.isScrolling ? @"" : @"-");
 }
 
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
@@ -983,6 +1041,8 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 }
 
 - (void)scrollViewDidStop:(UIScrollView *)scrollView {
+	if(!self.isScrolling) return;
+
     self.upperRightContainerView.userInteractionEnabled = YES;
     self.lowerRightContainerView.userInteractionEnabled = YES;
     self.lowerLeftContainerView.userInteractionEnabled = YES;
@@ -990,10 +1050,22 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
     self.lowerLeftBouncing = NO;
     self.lowerRightBouncing = NO;
 
-    if (!scrollView.isDecelerating && !scrollView.isDragging && !scrollView.isTracking) {
+	// The problem with isTracking is that dragging the view around then letting up will still register isTracking (Apple bug?)
+    if (!scrollView.isDecelerating && !scrollView.isDragging/* && !scrollView.isTracking*/) {
         [self setNeedsLayout];
         [self hideScrollIndicators];
-    }
+		self.isScrolling = NO;
+	}
+}
+
+- (void)scrollViewDidScrollToTop:(UIScrollView *)scrollView
+{	
+	[self scrollViewDidStop:scrollView];
+}
+
+- (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView
+{
+	[self scrollViewDidStop:scrollView];
 }
 
 @end

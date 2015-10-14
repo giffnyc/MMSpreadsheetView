@@ -45,6 +45,9 @@
  @discussion This will be set either by `MMSpreadsheetView` or `MMGridLayout` using a delegate call to collectionView:layout:sizeForItemAtIndexPath: via the `setItemHeight:` method. The layout is invalidated when the itemHeight is changed.
  */
 @property (nonatomic, assign) CGSize itemSize;
+#ifndef ORIGINAL
+@property (nonatomic, strong) NSMutableArray *widths;
+#endif
 
 /**
  The space between cells.

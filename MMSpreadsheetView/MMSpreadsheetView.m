@@ -963,6 +963,9 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
                 self.lowerRightContainerView.userInteractionEnabled = NO;
                 self.lowerLeftBouncing = YES;
             }
+			else if(self.snapToGrid) {
+				*targetContentOffset = [self alignOffset:toffset collectionView:self.lowerLeftCollectionView];
+			}
             break;
         }
             
@@ -997,7 +1000,7 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
             break;
         }
     }
-	NSLog(@"%@scrollViewDidEndDragging : withVelocity", self.isScrolling ? @"" : @"-");
+	//NSLog(@"%@scrollViewDidEndDragging : withVelocity", self.isScrolling ? @"" : @"-");
 }
 
 - (CGPoint)alignOffset:(CGPoint)pt collectionView:(UICollectionView *)collectionView {
@@ -1033,7 +1036,7 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 	if(!decelerate) {
 		[self scrollViewDidStop:scrollView];
 	}
-	NSLog(@"%@scrollViewDidEndDragging : willDecelerate", self.isScrolling ? @"" : @"-");
+	//NSLog(@"%@scrollViewDidEndDragging : willDecelerate", self.isScrolling ? @"" : @"-");
 }
 
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {

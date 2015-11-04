@@ -171,6 +171,7 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
     [self.upperRightCollectionView reloadData];
     [self.lowerLeftCollectionView reloadData];
     [self.lowerRightCollectionView reloadData];
+	[self setNeedsLayout];	// In case transition between some "data" rows and none
 }
 
 - (void)flashScrollIndicators {
@@ -181,6 +182,7 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 #pragma mark - View Setup functions
 
 - (void)setupSubviews {
+NSLog(@"setupSubviews");
     switch (self.spreadsheetHeaderConfiguration) {
         case MMSpreadsheetHeaderConfigurationNone:
             [self setupLowerRightView];
@@ -271,6 +273,7 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 }
 
 - (void)layoutSubviews {
+NSLog(@"layoutSubviews");
     [super layoutSubviews];
     NSIndexPath *indexPathZero = [NSIndexPath indexPathForItem:0 inSection:0];
     switch (self.spreadsheetHeaderConfiguration) {
@@ -463,8 +466,8 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
     NSInteger maxRows = [_dataSource numberOfRowsInSpreadsheetView:self];
     NSInteger maxCols = [_dataSource numberOfColumnsInSpreadsheetView:self];
     
-    NSAssert(self.headerColumnCount < maxCols, @"Invalid configuration: number of header columns must be less than (dataSource) numberOfColumnsInSpreadsheetView");
-    NSAssert(self.headerRowCount < maxRows, @"Invalid configuration: number of header rows must be less than (dataSource) numberOfRowsInSpreadsheetView");
+    NSAssert(self.headerColumnCount <= maxCols, @"Invalid configuration: number of header columns must be less than or equal to (dataSource) numberOfColumnsInSpreadsheetView");
+    NSAssert(self.headerRowCount <= maxRows, @"Invalid configuration: number of header rows must be less than or equal to (dataSource) numberOfRowsInSpreadsheetView");
 }
 
 - (void)initializeCollectionViewLayoutItemSize:(UICollectionView *)collectionView name:(NSString*)name {
@@ -734,13 +737,14 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
             NSAssert(NO, @"What have you done?");
             break;
     }
-    return adjustedRows;
+    return adjustedRows == 0 ? 1 : adjustedRows; // No "data"
 }
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
     NSInteger items = 0;
     NSInteger columnCount = [self.dataSource numberOfColumnsInSpreadsheetView:self];
-    
+    NSInteger rowCount = [self.dataSource numberOfRowsInSpreadsheetView:self];
+
     switch (collectionView.tag) {
         case MMSpreadsheetViewCollectionUpperLeft:
             items = self.headerColumnCount;
@@ -751,11 +755,11 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
             break;
             
         case MMSpreadsheetViewCollectionLowerLeft:
-            items = self.headerColumnCount;
+            items = rowCount == self.headerRowCount ? 0 : self.headerColumnCount; // No "data"
             break;
             
         case MMSpreadsheetViewCollectionLowerRight:
-            items = columnCount - self.headerColumnCount;
+            items = rowCount == self.headerRowCount ? 0 : (columnCount - self.headerColumnCount); // No "data"
             break;
             
         default:
@@ -770,6 +774,14 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
     NSIndexPath *dataSourceIndexPath = [self dataSourceIndexPathFromCollectionView:collectionView indexPath:indexPath];
     UICollectionViewCell *cell = [self.dataSource spreadsheetView:self cellForItemAtIndexPath:dataSourceIndexPath];
     return cell;
+}
+
+- (UICollectionViewCell *)cellForItemAtDataSourceIndexPath:(NSIndexPath *)dataSourceIndexPath
+{
+	UICollectionView *collectionView = [self collectionViewForDataSourceIndexPath:dataSourceIndexPath];
+	NSIndexPath *indexPath = [self collectionViewIndexPathFromDataSourceIndexPath: dataSourceIndexPath];
+
+	return [collectionView cellForItemAtIndexPath:indexPath];
 }
 
 #pragma mark - UICollectionViewDelegate

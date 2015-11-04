@@ -378,6 +378,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL isScrolling;
 @property (nonatomic, assign) BOOL snapToGrid;
 
+// DFH: new to return the actual cell using a dataSourceIndexPath
+- (nullable UICollectionViewCell *)cellForItemAtDataSourceIndexPath:(NSIndexPath *)indexPath;
+
 // need this to dynamically update cell content
 - (UICollectionView *)collectionViewForDataSourceIndexPath:(NSIndexPath *)indexPath;
 - (NSIndexPath *)dataSourceIndexPathFromCollectionView:(UICollectionView *)collectionView indexPath:(NSIndexPath *)indexPath;

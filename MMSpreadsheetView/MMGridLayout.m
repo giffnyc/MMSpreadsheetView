@@ -112,7 +112,10 @@
     [super prepareLayout];
     self.gridRowCount = [self.collectionView numberOfSections];
     self.gridColumnCount = [self.collectionView numberOfItemsInSection:0];
-
+	if(_gridColumnCount == 0) {
+		NSLog(@"HAH - dont do layout yet!!!");
+		return; // DFH
+	}
 
     if (!_isInitialized) {
         self.widths = [NSMutableArray arrayWithCapacity:_gridColumnCount];
@@ -125,6 +128,7 @@
         }
         self.itemSize = size;
         self.isInitialized = YES;
+NSLog(@"INITIALIZED %d", (int)self.collectionView.tag);
     }
 }
 
@@ -144,6 +148,11 @@
 }
 
 - (NSArray *)layoutAttributesForElementsInRect:(CGRect)rect {
+	if(_gridColumnCount == 0) {
+		NSLog(@"SPECIAL CASE");
+		return [NSArray array];
+	}
+
     NSUInteger startRow = floorf(rect.origin.y / _itemSize.height);
     NSUInteger endRow = MIN(_gridRowCount - 1, ceilf(CGRectGetMaxY(rect) / _itemSize.height));
 
@@ -166,7 +175,7 @@
 
     NSParameterAssert(_gridRowCount > 0);
     NSParameterAssert(_gridColumnCount > 0);
-    
+
     NSMutableArray *attributes = [NSMutableArray arrayWithCapacity:(1+endRow-startRow)*(1+endCol-startCol)];
     for (NSUInteger row = startRow; row <= endRow; row++) {
         for (NSUInteger col = startCol; col <=  endCol; col++) {

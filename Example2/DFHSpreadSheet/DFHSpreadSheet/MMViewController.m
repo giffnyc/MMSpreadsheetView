@@ -41,20 +41,61 @@
     NSUInteger rows;
     NSUInteger cols;
 	MMSpreadsheetView *spreadSheetView;
+	MMRefreshControl *refreshControl;
+	UITabBarController *c;
+
 }
+
+//- (BOOL)hidesBottomBarWhenPushed {
+//	return YES;
+//}
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    
-//    NSUInteger rows = 11;
-//    NSUInteger cols = 9;
+
+	self.navigationController.navigationBar.translucent = NO;
+	self.tabBarController.tabBar.translucent = NO;
+
+	self.navigationController.hidesBarsWhenVerticallyCompact = YES;
+	self.navigationController.hidesBarsOnSwipe = YES;
+
 	rows = 11;
 	cols = 9;
 
     // Create some fake grid data for the demo.
     self.tableData = [NSMutableArray array];
+	for (NSUInteger rowNumber = 0; rowNumber < rows; rowNumber++) {
+		NSMutableArray *row = [NSMutableArray array];
+		for (NSUInteger columnNumber = 0; columnNumber < cols; columnNumber++) {
+			[row addObject:[NSString stringWithFormat:@"R%lu:C%lu", (unsigned long)rowNumber, (unsigned long)columnNumber]];
+//NSLog(@"ROW %d", (int)rowNumber);
+		}
+		[self.tableData addObject:row];
+		
+	}
+	//[spreadSheetView reloadData];
 
+#if 0
+	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1000 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^
+	{
+		NSLog(@"BOT GUIDE %d", (int)self.bottomLayoutGuide.length);
+		NSLog(@"FRAME %@", NSStringFromCGRect(self.view.frame));
+//		CGRect r = self.tabBarController.tabBar.frame;
+//		r.origin.y += r.size.height;
+//		r.size.height = 0;
+//		self.tabBarController.tabBar.frame = r;
+		[self.tabBarController.tabBar setHidden:YES];
+		[self.view setNeedsLayout];
+		[self.view setNeedsDisplay];
+		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1000 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^
+		{
+			NSLog(@"BOT GUIDE %d", (int)self.bottomLayoutGuide.length);
+			NSLog(@"FRAME %@", NSStringFromCGRect(self.view.frame));
+		});
+	});
+#endif
 
+#if 0
 		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2000 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^
 		{
 			for (NSUInteger rowNumber = 0; rowNumber < rows; rowNumber++) {
@@ -101,23 +142,29 @@
 			[spreadSheetView reloadData];
 			//[spreadSheetView setNeedsDisplay];
 		});
-
-
-	// DFH - BUG ROW 0 never shown
-//    for (NSUInteger rowNumber = 0; rowNumber < rows; rowNumber++) {
-//        NSMutableArray *row = [NSMutableArray array];
-//        for (NSUInteger columnNumber = 0; columnNumber < cols; columnNumber++) {
-//            [row addObject:[NSString stringWithFormat:@"R%lu:C%lu", (unsigned long)rowNumber, (unsigned long)columnNumber]];
-//NSLog(@"ROW %d", (int)rowNumber);
-//        }
-//        [self.tableData addObject:row];
-//    }
+#endif
 
     self.selectedGridCells = [NSMutableSet set];
 
+#ifdef DFHSpreadSheet
+	spreadSheetView = (MMSpreadsheetView *)self.view;
+	spreadSheetView.navigationController = self.navigationController;
+	spreadSheetView.wantRefreshControl = YES;
+
+	[spreadSheetView commonInitWithNumberOfHeaderRows:NUM_HEADER_ROWS numberOfHeaderColumns:NUM_HEADER_COLS];
+	spreadSheetView.bounces = YES;
+	spreadSheetView.horizontalBounce = NO;
+	spreadSheetView.verticalBounce = YES;
+	spreadSheetView.directionalLockEnabled = YES;
+	spreadSheetView.snapToGrid = YES;
+
+	spreadSheetView.backgroundColor = [UIColor grayColor];
+#else
     // Create the spreadsheet in code.
     spreadSheetView = [[MMSpreadsheetView alloc] initWithNumberOfHeaderRows:NUM_HEADER_ROWS numberOfHeaderColumns:NUM_HEADER_COLS frame:self.view.bounds];
-
+    // Add the spreadsheet view as a subview.
+    [self.view addSubview:spreadSheetView];
+#endif
     // Register your cell classes.
     [spreadSheetView registerCellClass:[MMGridCell class] forCellWithReuseIdentifier:@"GridCell"];
     [spreadSheetView registerCellClass:[MMTopRowCell class] forCellWithReuseIdentifier:@"TopRowCell"];
@@ -126,17 +173,48 @@
     // Set the delegate & datasource for the spreadsheet view.
     spreadSheetView.delegate = self;
     spreadSheetView.dataSource = self;
+
 	spreadSheetView.snapToGrid = YES;
 	spreadSheetView.directionalLockEnabled = YES;
-    
-    // Add the spreadsheet view as a subview.
-    [self.view addSubview:spreadSheetView];
 }
+
+//- (void)viewDidLayoutSubviews {
+//	[super viewDidLayoutSubviews];
+//	NSLog(@"viewDidLayoutSubviews %d", (int)self.bottomLayoutGuide.length);
+//}
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
 }
+
+-(void)viewDidAppear:(BOOL)animated {
+	[super viewDidAppear:animated];
+
+	for(c in [self.view constraintsAffectingLayoutForAxis:UILayoutConstraintAxisVertical]) {
+		NSLog(@"C: %@", c);
+	}
+}
+
+- (void)refreshControlActive:(MMRefreshControl *)control {
+	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2000 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^
+	{
+		[spreadSheetView.refreshControl stopRefresh];
+	});
+}
+
+
+//- (void)willTransitionToTraitCollection:(UITraitCollection *)newCollection withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
+//	UITabBar *tBar = self.tabBarController.tabBar;
+//	BOOL hide = newCollection.verticalSizeClass == UIUserInterfaceSizeClassCompact;
+//	BOOL changeState = (hide && !tBar.isHidden) || (!hide && tBar.isHidden);
+//	if(changeState) [tBar setHidden:hide];
+////	if(changeState) {
+////		[coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
+////			[tBar setHidden:hide];
+////		} completion:nil];
+////	}
+//}
 
 #pragma mark - MMSpreadsheetViewDataSource
 

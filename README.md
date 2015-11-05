@@ -18,6 +18,7 @@ Sept 2015
 
 Nov 2015
 * Added Objective C annotation to better support use in Swift apps (as I am doing)
+* mmSpreadsheetRow and mmSpreadsheetColumn now properties not methods, so no need for trailing "()" in Swift
 * Support for "initWithCoder:" so you can now put the view in a Storyboard
 * Added variable heights
 * SnapToGrid option for the bottom/right collection to snap to its top/left or bottom or right

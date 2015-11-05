@@ -381,6 +381,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (UICollectionView *)collectionViewForDataSourceIndexPath:(NSIndexPath *)indexPath;
 - (NSIndexPath *)dataSourceIndexPathFromCollectionView:(UICollectionView *)collectionView indexPath:(NSIndexPath *)indexPath;
 
+- (void)hideTabBar:(BOOL)hide withAnimationDuration:(CGFloat)animateDuration coordinator:(nullable id<UIViewControllerTransitionCoordinator>)coordinator;
+
 @end
 
 @interface MMRefreshControl: UIView		// UIView

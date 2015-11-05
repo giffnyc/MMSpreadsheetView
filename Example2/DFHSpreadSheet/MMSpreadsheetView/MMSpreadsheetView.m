@@ -23,7 +23,7 @@
 #import "MMGridLayout.h"
 #import "NSIndexPath+MMSpreadsheetView.h"
 
-#define HIDE_NAVBAR_VELOCITY_THRESH	100
+#define HIDE_NAVBAR_VELOCITY_THRESH	200
 
 typedef NS_ENUM(NSUInteger, MMSpreadsheetViewCollection) {
     MMSpreadsheetViewCollectionUpperLeft = 1,
@@ -159,6 +159,96 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 	self.backgroundColor = [UIColor grayColor];
 
 	[self setupSubviews];
+
+	[self hideTabBar:NO withAnimationDuration: 0 coordinator: nil];
+}
+
+- (void)hideTabBar:(BOOL)hide withAnimationDuration:(CGFloat)animateDuration coordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
+	UITabBarController *tabBarController = _navigationController.tabBarController;
+	UITabBar *tabBar = tabBarController.tabBar;
+	if(tabBar.translucent) {
+		CGFloat offset = hide ? 0 : tabBar.frame.size.height;
+
+		UIEdgeInsets loadingInsetLeft = _lowerLeftCollectionView.contentInset;
+		UIEdgeInsets loadingInsetRight = _lowerRightCollectionView.contentInset;
+
+		CGPoint contentOffsetLeft = _lowerLeftCollectionView.contentOffset;
+		CGPoint contentOffsetRight = _lowerRightCollectionView.contentOffset;
+
+		BOOL lowerLeftAtMax = lround(contentOffsetLeft.y) == lround([self maxOffset:_lowerLeftCollectionView withInset:loadingInsetLeft]);
+		BOOL lowerRightAtMax = lround(contentOffsetRight.y) == lround([self maxOffset:_lowerRightCollectionView withInset:loadingInsetRight]);
+
+		loadingInsetLeft.bottom = offset;
+		loadingInsetRight.bottom = offset;
+
+		CGFloat maxLeftOffset = [self maxOffset:_lowerLeftCollectionView withInset:loadingInsetLeft];
+		CGFloat maxRightOffset = [self maxOffset:_lowerRightCollectionView withInset:loadingInsetRight];
+
+		if(hide) {
+			contentOffsetLeft.y = MIN(contentOffsetLeft.y, maxLeftOffset);
+			contentOffsetRight.y = MIN(contentOffsetRight.y, maxRightOffset);
+		} else {
+			if(lowerLeftAtMax) contentOffsetLeft.y = maxLeftOffset;
+			if(lowerRightAtMax) contentOffsetRight.y = maxRightOffset;
+		}
+
+		dispatch_block_t code = ^{
+			self.lowerLeftCollectionView.contentInset = loadingInsetLeft;
+			self.lowerRightCollectionView.contentInset = loadingInsetRight;
+			self.lowerLeftCollectionView.contentOffset = contentOffsetLeft;
+			self.lowerRightCollectionView.contentOffset = contentOffsetRight;
+		};
+
+		if(animateDuration > 0 || coordinator) {
+			CGRect r = tabBar.frame;
+			if(!hide) {
+				[tabBar setHidden:NO];
+				r.origin.y += r.size.height;
+				tabBar.frame = r;
+			}
+
+			dispatch_block_t startBlock = ^{
+				code();
+				CGRect tabFrame = r;
+				if(hide) {
+					tabFrame.origin.y += tabFrame.size.height;
+				} else {
+					tabFrame.origin.y -= tabFrame.size.height;
+				}
+				tabBar.frame = tabFrame;
+			};
+			void (^completionBlock)(BOOL) = ^void(BOOL finished) {
+				if(hide) {
+					CGRect r = tabBar.frame;
+					r.origin.y -= r.size.height;
+					tabBar.frame = r;
+					[tabBar setHidden:YES];
+				}
+				//NSLog(@"ContentInset=%d offset=%d", (int)self.lowerRightCollectionView.contentInset.bottom, (int)self.lowerRightCollectionView.contentOffset.y);
+			};
+
+			if(coordinator) {
+				[coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext> context) {
+					startBlock();
+				} completion: ^(id<UIViewControllerTransitionCoordinatorContext> context) {
+					completionBlock(YES);
+				}];
+			} else {
+				[UIView animateWithDuration:animateDuration animations:startBlock completion:completionBlock];
+			}
+		} else {
+			code();
+			[tabBar setHidden:hide];
+		}
+	}
+}
+
+- (CGFloat)maxOffset:(UIScrollView *)scrollView withInset:(UIEdgeInsets)insets {
+	CGFloat h1 = scrollView.contentSize.height;
+	CGFloat h2 = scrollView.bounds.size.height;
+	CGFloat maxOffset = h1 - h2 + insets.top + insets.bottom;
+	if(maxOffset < 0) maxOffset = 0;
+	return maxOffset;
 }
 
 #pragma mark - Public Functions
@@ -420,7 +510,7 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 
 		CGPoint pt = [recognizer velocityInView:self];
 		//NSLog(@"VELOCITY: %@", NSStringFromCGPoint(pt));
-		if(pt.y > HIDE_NAVBAR_VELOCITY_THRESH*2) {
+		if(pt.y > HIDE_NAVBAR_VELOCITY_THRESH) {
 			[_navigationController setNavigationBarHidden:NO animated:YES];
 		} else
 		if(pt.y < -HIDE_NAVBAR_VELOCITY_THRESH) {

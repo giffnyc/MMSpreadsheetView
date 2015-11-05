@@ -57,7 +57,7 @@
 		DED51ACC1BE9483000FE4BE8 /* MMViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MMViewController.m; sourceTree = "<group>"; };
 		DED51AD71BE95F4B00FE4BE8 /* DFHSpreadSheet-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "DFHSpreadSheet-Bridging-Header.h"; sourceTree = "<group>"; };
 		DED51ADA1BE95FBC00FE4BE8 /* TableViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TableViewController.swift; sourceTree = "<group>"; };
-		DED51AE01BEBE54800FE4BE8 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		DED51AE21BEBE8DF00FE4BE8 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../../README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,7 +74,7 @@
 		DED51A8B1BE9445000FE4BE8 = {
 			isa = PBXGroup;
 			children = (
-				DED51AE01BEBE54800FE4BE8 /* README.md */,
+				DED51AE21BEBE8DF00FE4BE8 /* README.md */,
 				DED51AA31BE9445000FE4BE8 /* Main.storyboard */,
 				DED51AB11BE9459300FE4BE8 /* MMSpreadsheetView */,
 				DED51A961BE9445000FE4BE8 /* DFHSpreadSheet */,

@@ -12,9 +12,6 @@
 		DED51AA51BE9445000FE4BE8 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = DED51AA31BE9445000FE4BE8 /* Main.storyboard */; };
 		DED51AA71BE9445000FE4BE8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DED51AA61BE9445000FE4BE8 /* Assets.xcassets */; };
 		DED51AAA1BE9445000FE4BE8 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = DED51AA81BE9445000FE4BE8 /* LaunchScreen.storyboard */; };
-		DED51ABB1BE9459300FE4BE8 /* MMGridLayout.m in Sources */ = {isa = PBXBuildFile; fileRef = DED51AB41BE9459300FE4BE8 /* MMGridLayout.m */; };
-		DED51ABC1BE9459300FE4BE8 /* MMSpreadsheetView.m in Sources */ = {isa = PBXBuildFile; fileRef = DED51AB61BE9459300FE4BE8 /* MMSpreadsheetView.m */; };
-		DED51ABD1BE9459300FE4BE8 /* NSIndexPath+MMSpreadsheetView.m in Sources */ = {isa = PBXBuildFile; fileRef = DED51AB81BE9459300FE4BE8 /* NSIndexPath+MMSpreadsheetView.m */; };
 		DED51ACD1BE9483000FE4BE8 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = DED51AC01BE9483000FE4BE8 /* Default-568h@2x.png */; };
 		DED51ACE1BE9483000FE4BE8 /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = DED51AC11BE9483000FE4BE8 /* Default.png */; };
 		DED51ACF1BE9483000FE4BE8 /* Default@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = DED51AC21BE9483000FE4BE8 /* Default@2x.png */; };
@@ -25,6 +22,9 @@
 		DED51AD41BE9483000FE4BE8 /* MMTopRowCell.m in Sources */ = {isa = PBXBuildFile; fileRef = DED51ACA1BE9483000FE4BE8 /* MMTopRowCell.m */; };
 		DED51AD51BE9483000FE4BE8 /* MMViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = DED51ACC1BE9483000FE4BE8 /* MMViewController.m */; };
 		DED51ADB1BE95FBC00FE4BE8 /* TableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DED51ADA1BE95FBC00FE4BE8 /* TableViewController.swift */; };
+		DED51AEB1BEBEBB300FE4BE8 /* MMGridLayout.m in Sources */ = {isa = PBXBuildFile; fileRef = DED51AE61BEBEBB300FE4BE8 /* MMGridLayout.m */; };
+		DED51AEC1BEBEBB300FE4BE8 /* MMSpreadsheetView.m in Sources */ = {isa = PBXBuildFile; fileRef = DED51AE81BEBEBB300FE4BE8 /* MMSpreadsheetView.m */; };
+		DED51AED1BEBEBB300FE4BE8 /* NSIndexPath+MMSpreadsheetView.m in Sources */ = {isa = PBXBuildFile; fileRef = DED51AEA1BEBEBB300FE4BE8 /* NSIndexPath+MMSpreadsheetView.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,12 +36,6 @@
 		DED51AA61BE9445000FE4BE8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DED51AA91BE9445000FE4BE8 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		DED51AAB1BE9445000FE4BE8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		DED51AB31BE9459300FE4BE8 /* MMGridLayout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MMGridLayout.h; sourceTree = "<group>"; };
-		DED51AB41BE9459300FE4BE8 /* MMGridLayout.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MMGridLayout.m; sourceTree = "<group>"; };
-		DED51AB51BE9459300FE4BE8 /* MMSpreadsheetView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MMSpreadsheetView.h; sourceTree = "<group>"; };
-		DED51AB61BE9459300FE4BE8 /* MMSpreadsheetView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MMSpreadsheetView.m; sourceTree = "<group>"; };
-		DED51AB71BE9459300FE4BE8 /* NSIndexPath+MMSpreadsheetView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSIndexPath+MMSpreadsheetView.h"; sourceTree = "<group>"; };
-		DED51AB81BE9459300FE4BE8 /* NSIndexPath+MMSpreadsheetView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSIndexPath+MMSpreadsheetView.m"; sourceTree = "<group>"; };
 		DED51AC01BE9483000FE4BE8 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
 		DED51AC11BE9483000FE4BE8 /* Default.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Default.png; sourceTree = "<group>"; };
 		DED51AC21BE9483000FE4BE8 /* Default@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default@2x.png"; sourceTree = "<group>"; };
@@ -58,6 +52,12 @@
 		DED51AD71BE95F4B00FE4BE8 /* DFHSpreadSheet-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "DFHSpreadSheet-Bridging-Header.h"; sourceTree = "<group>"; };
 		DED51ADA1BE95FBC00FE4BE8 /* TableViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TableViewController.swift; sourceTree = "<group>"; };
 		DED51AE21BEBE8DF00FE4BE8 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../../README.md; sourceTree = "<group>"; };
+		DED51AE51BEBEBB300FE4BE8 /* MMGridLayout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MMGridLayout.h; sourceTree = "<group>"; };
+		DED51AE61BEBEBB300FE4BE8 /* MMGridLayout.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MMGridLayout.m; sourceTree = "<group>"; };
+		DED51AE71BEBEBB300FE4BE8 /* MMSpreadsheetView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MMSpreadsheetView.h; sourceTree = "<group>"; };
+		DED51AE81BEBEBB300FE4BE8 /* MMSpreadsheetView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MMSpreadsheetView.m; sourceTree = "<group>"; };
+		DED51AE91BEBEBB300FE4BE8 /* NSIndexPath+MMSpreadsheetView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSIndexPath+MMSpreadsheetView.h"; sourceTree = "<group>"; };
+		DED51AEA1BEBEBB300FE4BE8 /* NSIndexPath+MMSpreadsheetView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSIndexPath+MMSpreadsheetView.m"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -76,7 +76,7 @@
 			children = (
 				DED51AE21BEBE8DF00FE4BE8 /* README.md */,
 				DED51AA31BE9445000FE4BE8 /* Main.storyboard */,
-				DED51AB11BE9459300FE4BE8 /* MMSpreadsheetView */,
+				DED51AE41BEBEBB300FE4BE8 /* MMSpreadsheetView */,
 				DED51A961BE9445000FE4BE8 /* DFHSpreadSheet */,
 				DED51A951BE9445000FE4BE8 /* Products */,
 			);
@@ -126,17 +126,18 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
-		DED51AB11BE9459300FE4BE8 /* MMSpreadsheetView */ = {
+		DED51AE41BEBEBB300FE4BE8 /* MMSpreadsheetView */ = {
 			isa = PBXGroup;
 			children = (
-				DED51AB31BE9459300FE4BE8 /* MMGridLayout.h */,
-				DED51AB41BE9459300FE4BE8 /* MMGridLayout.m */,
-				DED51AB51BE9459300FE4BE8 /* MMSpreadsheetView.h */,
-				DED51AB61BE9459300FE4BE8 /* MMSpreadsheetView.m */,
-				DED51AB71BE9459300FE4BE8 /* NSIndexPath+MMSpreadsheetView.h */,
-				DED51AB81BE9459300FE4BE8 /* NSIndexPath+MMSpreadsheetView.m */,
+				DED51AE51BEBEBB300FE4BE8 /* MMGridLayout.h */,
+				DED51AE61BEBEBB300FE4BE8 /* MMGridLayout.m */,
+				DED51AE71BEBEBB300FE4BE8 /* MMSpreadsheetView.h */,
+				DED51AE81BEBEBB300FE4BE8 /* MMSpreadsheetView.m */,
+				DED51AE91BEBEBB300FE4BE8 /* NSIndexPath+MMSpreadsheetView.h */,
+				DED51AEA1BEBEBB300FE4BE8 /* NSIndexPath+MMSpreadsheetView.m */,
 			);
-			path = MMSpreadsheetView;
+			name = MMSpreadsheetView;
+			path = ../../MMSpreadsheetView;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -214,16 +215,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				DED51ABD1BE9459300FE4BE8 /* NSIndexPath+MMSpreadsheetView.m in Sources */,
+				DED51AED1BEBEBB300FE4BE8 /* NSIndexPath+MMSpreadsheetView.m in Sources */,
 				DED51AD21BE9483000FE4BE8 /* MMGridCell.m in Sources */,
 				DED51A9C1BE9445000FE4BE8 /* AppDelegate.m in Sources */,
 				DED51ADB1BE95FBC00FE4BE8 /* TableViewController.swift in Sources */,
 				DED51A991BE9445000FE4BE8 /* main.m in Sources */,
-				DED51ABC1BE9459300FE4BE8 /* MMSpreadsheetView.m in Sources */,
-				DED51ABB1BE9459300FE4BE8 /* MMGridLayout.m in Sources */,
 				DED51AD41BE9483000FE4BE8 /* MMTopRowCell.m in Sources */,
+				DED51AEC1BEBEBB300FE4BE8 /* MMSpreadsheetView.m in Sources */,
 				DED51AD51BE9483000FE4BE8 /* MMViewController.m in Sources */,
 				DED51AD31BE9483000FE4BE8 /* MMLeftColumnCell.m in Sources */,
+				DED51AEB1BEBEBB300FE4BE8 /* MMGridLayout.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

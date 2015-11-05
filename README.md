@@ -27,6 +27,7 @@ Nov 2015
 * Hide a tab bar when rotating to landscape on a "Compact Vertical" device (and reshow it later)
 * Added a completely new Example Project (Example2 folder) which puts the spreadsheet in a nav controller in a tab view and demos all the new features
 * New Demo is Universal (can be used on phone or iPad)
+
 ---
 
 ##Documentation

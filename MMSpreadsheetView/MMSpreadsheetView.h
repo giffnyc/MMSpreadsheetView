@@ -38,6 +38,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 @class MMSpreadsheetView;
+@class MMRefreshControl;
 
 /**
  An object that adopts the `MMSpreadsheetViewDataSource` protocol is responsible for providing the data and views required by a spreadsheet view. A data source object represents your app’s data model and vends information to the spreadsheet view as needed. It also handles the creation and configuration of cells used by the spreadsheet view to display your data.
@@ -96,10 +97,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (UICollectionViewCell *)spreadsheetView:(MMSpreadsheetView *)spreadsheetView cellForItemAtIndexPath:(NSIndexPath *)indexPath;
 
 @end
-
-
-
-
 
 /**
  
@@ -190,13 +187,9 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)spreadsheetView:(MMSpreadsheetView *)spreadsheetView performAction:(SEL)action forItemAtIndexPath:(NSIndexPath *)indexPath withSender:(id)sender;
 
+- (void)refreshControlActive:(MMRefreshControl *)control;
+
 @end
-
-
-
-
-
-
 
 /**
  `MMSpreadsheetView` is a configurable spreadsheet-like view. You choose to configure the view with zero or more header rows and zero or more header columns. Depending on this configuration, up to four collection views will be coordinated to provide the user interface. 
@@ -351,7 +344,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  Displays the scroll indicators momentarily.
  
- @discussion You should call this method whenever you bring the scroll view to front.
+ @discussion You should call this method whenever you bring the spreadsheet view to front.
  */
 - (void)flashScrollIndicators;
 
@@ -377,6 +370,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, assign) BOOL isScrolling;
 @property (nonatomic, assign) BOOL snapToGrid;
+@property (nonatomic, assign) BOOL wantRefreshControl;	// see extra delegate method
+@property (nonatomic, strong, nullable) UINavigationController *navigationController;	// when set, hide the Navigation bar on up-swipes, and show it on down-swipes
+@property (nonatomic, strong, nullable) MMRefreshControl *refreshControl;
 
 // DFH: new to return the actual cell using a dataSourceIndexPath
 - (nullable UICollectionViewCell *)cellForItemAtDataSourceIndexPath:(NSIndexPath *)indexPath;
@@ -384,6 +380,17 @@ NS_ASSUME_NONNULL_BEGIN
 // need this to dynamically update cell content
 - (UICollectionView *)collectionViewForDataSourceIndexPath:(NSIndexPath *)indexPath;
 - (NSIndexPath *)dataSourceIndexPathFromCollectionView:(UICollectionView *)collectionView indexPath:(NSIndexPath *)indexPath;
+
+- (void)hideTabBar:(BOOL)hide withAnimationDuration:(CGFloat)animateDuration coordinator:(nullable id<UIViewControllerTransitionCoordinator>)coordinator;
+
+@end
+
+@interface MMRefreshControl: UIView		// UIView
+@property (nonatomic, strong, readonly) UILabel *textLabel;
+@property (nonatomic, strong, readonly) UIActivityIndicatorView *indicator;
+
+- (void)startRefresh;
+- (void)stopRefresh;
 
 @end
 

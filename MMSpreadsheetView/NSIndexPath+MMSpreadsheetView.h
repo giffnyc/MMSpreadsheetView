@@ -25,15 +25,17 @@
  This category renames section and row values from NSIndexPath to reduce confusion when referring to a particular cell in a `MMSpreadsheetView`.
  */
 @interface NSIndexPath (MMSpreadsheetView)
+@property (nonatomic, assign, readonly) NSInteger mmSpreadsheetColumn;
+@property (nonatomic, assign, readonly) NSInteger mmSpreadsheetRow;
 
 /**
  The column value of an `NSIndexPath`.
  */
-- (NSInteger)mmSpreadsheetColumn;
+//- (NSInteger)mmSpreadsheetColumn;
 
 /**
  The row value of an `NSIndexPath`.
  */
-- (NSInteger)mmSpreadsheetRow;
+//- (NSInteger)mmSpreadsheetRow;
 
 @end

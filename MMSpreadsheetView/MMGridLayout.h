@@ -44,10 +44,7 @@
  
  @discussion This will be set either by `MMSpreadsheetView` or `MMGridLayout` using a delegate call to collectionView:layout:sizeForItemAtIndexPath: via the `setItemHeight:` method. The layout is invalidated when the itemHeight is changed.
  */
-@property (nonatomic, assign) CGSize itemSize;
-#ifndef ORIGINAL
-@property (nonatomic, strong) NSMutableArray *widths;
-#endif
+//@property (nonatomic, assign) CGSize itemSize;
 
 /**
  The space between cells.
@@ -55,5 +52,8 @@
  @discussion This allows for setting the spacing between cells. Lines are not drawn, but show the background of the collection view. The layout is invalidated when the cellSpacing is changed. Default is 1.
  */
 @property (nonatomic, assign) CGFloat cellSpacing;
+
+
+- (CGPoint)snapToGrid:(CGPoint)startingPoint;
 
 @end

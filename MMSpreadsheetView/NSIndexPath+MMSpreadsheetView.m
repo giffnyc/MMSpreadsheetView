@@ -21,6 +21,8 @@
 #import "NSIndexPath+MMSpreadsheetView.h"
 
 @implementation NSIndexPath (MMSpreadsheetView)
+@dynamic mmSpreadsheetRow;
+@dynamic mmSpreadsheetColumn;
 
 - (NSInteger)mmSpreadsheetRow {
     return self.section;

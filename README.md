@@ -9,10 +9,23 @@
 
 Notes from dhoerl:
 
+Sept 2015
 * Added variable width columns using the patch file listed in the "Issues" section of the original repository. 
 * Added protective code to prevent crashes due to exact dimension matches (another original project Issue)
 * Added 'names' to each layout object to assist in debugging.
+* Ported code posted on original github site to support variable widths
 * Modified the demo project to use variable widths (each column is 10 pixels wider than the one to the left)
+
+Nov 2015
+* Added Objective C annotation to better support use in Swift apps (as I am doing)
+* Support for "initWithCoder:" so you can now put the view in a Storyboard
+* Added variable heights
+* SnapToGrid option for the bottom/right collection to snap to its top/left or bottom or right
+* Allow for the case of no row data in the lower section (it use to crash the project)
+* Added support for showing/hiding a navigation bar as normal TableViews do
+* Added a built in "UIRefreshControl" like view to support "Pull To Refresh"
+* Hide a tab bar when rotating to landscape on a "Compact Vertical" device (and reshow it later)
+* Added a completely new Example Project (Example2 folder) which puts the spreadsheet in a nav controller in a tab view and demos all the new features
 
 ---
 

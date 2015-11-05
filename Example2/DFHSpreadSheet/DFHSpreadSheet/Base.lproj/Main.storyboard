@@ -29,19 +29,25 @@
         <!--View Controller-->
         <scene sceneID="KzJ-EQ-KyV">
             <objects>
-                <viewController automaticallyAdjustsScrollViewInsets="NO" id="7SI-aZ-D0f" customClass="MMViewController" sceneMemberID="viewController">
+                <viewController id="7SI-aZ-D0f" customClass="MMViewController" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="MSc-pW-6wN"/>
                         <viewControllerLayoutGuide type="bottom" id="sSx-d3-Qom"/>
                     </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="CQ6-W7-9dE" customClass="MMSpreadsheetView">
-                        <rect key="frame" x="0.0" y="64" width="600" height="487"/>
+                        <rect key="frame" x="0.0" y="64" width="600" height="536"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <animations/>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                     </view>
-                    <extendedEdge key="edgesForExtendedLayout"/>
-                    <navigationItem key="navigationItem" id="jux-gd-thg"/>
+                    <extendedEdge key="edgesForExtendedLayout" bottom="YES"/>
+                    <navigationItem key="navigationItem" id="jux-gd-thg">
+                        <barButtonItem key="rightBarButtonItem" title="Toggle Tab Bar" id="aM8-uh-mNZ">
+                            <connections>
+                                <action selector="toggleTabBar:" destination="7SI-aZ-D0f" id="Os7-q5-74t"/>
+                            </connections>
+                        </barButtonItem>
+                    </navigationItem>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="X6L-B0-57Y" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
@@ -110,7 +116,7 @@
         <!--Item-->
         <scene sceneID="CGL-ST-EiM">
             <objects>
-                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="zTb-HR-EFc" sceneMemberID="viewController">
+                <navigationController id="zTb-HR-EFc" sceneMemberID="viewController">
                     <tabBarItem key="tabBarItem" title="Item" id="wnd-El-Pu9"/>
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="YJI-3X-SJd">

@@ -54,64 +54,15 @@
     // Create some fake grid data for the demo.
     self.tableData = [NSMutableArray array];
 
-
-		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2000 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^
-		{
-			for (NSUInteger rowNumber = 0; rowNumber < rows; rowNumber++) {
-				NSMutableArray *row = [NSMutableArray array];
-				for (NSUInteger columnNumber = 0; columnNumber < cols; columnNumber++) {
-					[row addObject:[NSString stringWithFormat:@"R%lu:C%lu", (unsigned long)rowNumber, (unsigned long)columnNumber]];
+	for (NSUInteger rowNumber = 0; rowNumber < rows; rowNumber++) {
+		NSMutableArray *row = [NSMutableArray array];
+		for (NSUInteger columnNumber = 0; columnNumber < cols; columnNumber++) {
+			[row addObject:[NSString stringWithFormat:@"R%lu:C%lu", (unsigned long)rowNumber, (unsigned long)columnNumber]];
 //NSLog(@"ROW %d", (int)rowNumber);
-				}
-				[self.tableData addObject:row];
-				
-			}
-			NSLog(@"RELOAD");
-			[spreadSheetView reloadData];
-		});
-
-		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 4000 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^
-		{
-			[self.tableData removeAllObjects];
-
-			NSLog(@"RELOAD 2");
-			[spreadSheetView reloadData];
-		});
-
-		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 6000 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^
-		{
-			for (NSUInteger rowNumber = 0; rowNumber < rows; rowNumber++) {
-				NSMutableArray *row = [NSMutableArray array];
-				for (NSUInteger columnNumber = 0; columnNumber < cols; columnNumber++) {
-					[row addObject:[NSString stringWithFormat:@"R%lu:C%lu", (unsigned long)rowNumber, (unsigned long)columnNumber]];
-//NSLog(@"ROW %d", (int)rowNumber);
-				}
-				[self.tableData addObject:row];
-				
-			}
-			NSLog(@"RELOAD 3");
-			[spreadSheetView reloadData];
-		});
-
-		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 8000 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^
-		{
-			[self.tableData removeAllObjects];
-
-			NSLog(@"RELOAD 4");
-			[spreadSheetView reloadData];
-			//[spreadSheetView setNeedsDisplay];
-		});
-
-
-	// DFH - BUG ROW 0 never shown
-//    for (NSUInteger rowNumber = 0; rowNumber < rows; rowNumber++) {
-//        NSMutableArray *row = [NSMutableArray array];
-//        for (NSUInteger columnNumber = 0; columnNumber < cols; columnNumber++) {
-//            [row addObject:[NSString stringWithFormat:@"R%lu:C%lu", (unsigned long)rowNumber, (unsigned long)columnNumber]];
-//NSLog(@"ROW %d", (int)rowNumber);
-//        }
-//        [self.tableData addObject:row];
-//    }
+		}
+		[self.tableData addObject:row];
+		
+	}
 
     self.selectedGridCells = [NSMutableSet set];
 

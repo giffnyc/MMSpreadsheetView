@@ -606,13 +606,13 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 }
 
 - (void)initializeCollectionViewLayoutItemSize:(UICollectionView *)collectionView name:(NSString*)name {
-    NSIndexPath *indexPathZero = [NSIndexPath indexPathForItem:0 inSection:0];
     MMGridLayout *layout = (MMGridLayout *)collectionView.collectionViewLayout;
     layout.name = name;
-    CGSize size = [self collectionView:collectionView
-                                layout:layout
-                sizeForItemAtIndexPath:indexPathZero];
-    layout.itemSize = size;
+//    NSIndexPath *indexPathZero = [NSIndexPath indexPathForItem:0 inSection:0];
+//    CGSize size = [self collectionView:collectionView
+//                                layout:layout
+//                sizeForItemAtIndexPath:indexPathZero];
+//    layout.itemSize = size; DFH
 }
 
 #pragma mark - Scroll Indicator
@@ -1192,27 +1192,9 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 		// Don't think this is possible but just in case...
 		return pt;
 	}
-
     MMGridLayout *layout = (MMGridLayout *)collectionView.collectionViewLayout;
-	CGFloat height = layout.itemSize.height;
-	CGFloat y = round(pt.y/height) * height;
-	CGFloat x = pt.x;
 
-	double rx=0;
-	double lx=0;
-	int columns = (int)[collectionView numberOfItemsInSection:0];
-	for(int i=0; i<columns; ++i) {
-		double width = [layout.widths[i] doubleValue];
-		rx += width;
-		if(pt.x < rx) {
-			double rounder = round((pt.x - lx)/width) * width;
-			x = lx + rounder;
-			break;
-		}
-		lx = rx;
-	}
-	CGPoint r = CGPointMake(x, y);
-	return r;
+	return [layout snapToGrid:pt];
 }
 
 - (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate

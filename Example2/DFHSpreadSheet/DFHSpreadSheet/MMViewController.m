@@ -44,17 +44,14 @@
 	MMRefreshControl *refreshControl;
 	UITabBarController *c;
 
+	BOOL tabBarHidden;
 }
-
-//- (BOOL)hidesBottomBarWhenPushed {
-//	return YES;
-//}
 
 - (void)viewDidLoad {
     [super viewDidLoad];
 
 	self.navigationController.navigationBar.translucent = NO;
-	self.tabBarController.tabBar.translucent = NO;
+	//self.tabBarController.tabBar.translucent = NO;
 
 	self.navigationController.hidesBarsWhenVerticallyCompact = YES;
 	self.navigationController.hidesBarsOnSwipe = YES;
@@ -146,7 +143,6 @@
 
     self.selectedGridCells = [NSMutableSet set];
 
-#ifdef DFHSpreadSheet
 	spreadSheetView = (MMSpreadsheetView *)self.view;
 	spreadSheetView.navigationController = self.navigationController;
 	spreadSheetView.wantRefreshControl = YES;
@@ -159,12 +155,7 @@
 	spreadSheetView.snapToGrid = YES;
 
 	spreadSheetView.backgroundColor = [UIColor grayColor];
-#else
-    // Create the spreadsheet in code.
-    spreadSheetView = [[MMSpreadsheetView alloc] initWithNumberOfHeaderRows:NUM_HEADER_ROWS numberOfHeaderColumns:NUM_HEADER_COLS frame:self.view.bounds];
-    // Add the spreadsheet view as a subview.
-    [self.view addSubview:spreadSheetView];
-#endif
+
     // Register your cell classes.
     [spreadSheetView registerCellClass:[MMGridCell class] forCellWithReuseIdentifier:@"GridCell"];
     [spreadSheetView registerCellClass:[MMTopRowCell class] forCellWithReuseIdentifier:@"TopRowCell"];
@@ -178,23 +169,50 @@
 	spreadSheetView.directionalLockEnabled = YES;
 }
 
-//- (void)viewDidLayoutSubviews {
-//	[super viewDidLayoutSubviews];
-//	NSLog(@"viewDidLayoutSubviews %d", (int)self.bottomLayoutGuide.length);
-//}
-
-- (void)didReceiveMemoryWarning {
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
-}
-
--(void)viewDidAppear:(BOOL)animated {
-	[super viewDidAppear:animated];
-
-	for(c in [self.view constraintsAffectingLayoutForAxis:UILayoutConstraintAxisVertical]) {
-		NSLog(@"C: %@", c);
+-(IBAction)toggleTabBar:(UIBarButtonItem *)sender {
+	if(tabBarHidden) {
+		tabBarHidden = NO;
+		[spreadSheetView hideTabBar:YES withAnimationDuration:0.250 coordinator:nil];
+	} else {
+		tabBarHidden = YES;
+		[spreadSheetView hideTabBar:NO withAnimationDuration:0.250 coordinator:nil];
 	}
 }
+
+- (void)willTransitionToTraitCollection:(UITraitCollection *)newCollection withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
+	UITabBar *tBar = self.tabBarController.tabBar;
+	BOOL shouldHide = newCollection.verticalSizeClass == UIUserInterfaceSizeClassCompact;
+	BOOL changeState = (shouldHide && !tBar.isHidden) || (!shouldHide && tBar.isHidden);
+	if(changeState) {
+		// Hide or unhide the Tab Bar on a phone (device with some compact dimension)
+		[spreadSheetView  hideTabBar:shouldHide withAnimationDuration:0 coordinator:coordinator];
+	}
+}
+
+
+/*
+	override func willTransitionToTraitCollection(newCollection: UITraitCollection, withTransitionCoordinator coordinator: UIViewControllerTransitionCoordinator) {
+		super.willTransitionToTraitCollection(newCollection, withTransitionCoordinator: coordinator)
+
+		print("will TransitionToTraitCollection")
+		if super.traitCollection.horizontalSizeClass == .Compact && newCollection.horizontalSizeClass == .Regular {
+			//iPhone 6 Plus!
+			lie = true
+			coordinator.animateAlongsideTransition(nil, completion: { (context: UIViewControllerTransitionCoordinatorContext) -> Void in
+				dispatch_async(dispatch_get_main_queue()) {
+					// Need to defer just a bit longer, so that Split View sees the Compact indicator
+					self.lie = false
+				}
+			})
+		}
+	}
+	override func traitCollectionDidChange(previousTraitCollection: UITraitCollection?) {
+		super.traitCollectionDidChange(previousTraitCollection)
+
+		print("DID TransitionToTraitCollection")
+	}
+
+*/
 
 - (void)refreshControlActive:(MMRefreshControl *)control {
 	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2000 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^
@@ -202,19 +220,6 @@
 		[spreadSheetView.refreshControl stopRefresh];
 	});
 }
-
-
-//- (void)willTransitionToTraitCollection:(UITraitCollection *)newCollection withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
-//	UITabBar *tBar = self.tabBarController.tabBar;
-//	BOOL hide = newCollection.verticalSizeClass == UIUserInterfaceSizeClassCompact;
-//	BOOL changeState = (hide && !tBar.isHidden) || (!hide && tBar.isHidden);
-//	if(changeState) [tBar setHidden:hide];
-////	if(changeState) {
-////		[coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
-////			[tBar setHidden:hide];
-////		} completion:nil];
-////	}
-//}
 
 #pragma mark - MMSpreadsheetViewDataSource
 
@@ -231,15 +236,22 @@
     
     // Upper right.
     if (indexPath.mmSpreadsheetRow == 0 && indexPath.mmSpreadsheetColumn > 0) {
-        return CGSizeMake(gridCellWidth + (indexPath.mmSpreadsheetColumn - NUM_HEADER_COLS ) * 10, topRowHeight);
+		return CGSizeMake(gridCellWidth + (indexPath.mmSpreadsheetColumn - NUM_HEADER_COLS ) * 10, topRowHeight);
     }
     
     // Lower left.
     if (indexPath.mmSpreadsheetRow > 0 && indexPath.mmSpreadsheetColumn == 0) {
-        return CGSizeMake(leftColumnWidth, gridCellHeight);
+		CGFloat width = leftColumnWidth;
+		CGFloat height = (indexPath.mmSpreadsheetRow % 2) ? gridCellHeight : (gridCellHeight/2);
+        return CGSizeMake(width, height); // indexPath
     }
-    
-    return CGSizeMake(gridCellWidth  + (indexPath.mmSpreadsheetColumn - NUM_HEADER_COLS ) * 10, gridCellHeight);
+
+	// Lower right
+	{
+		CGFloat width = gridCellWidth  + (indexPath.mmSpreadsheetColumn - NUM_HEADER_COLS ) * 10;
+		CGFloat height = (indexPath.mmSpreadsheetRow % 2) ? gridCellHeight : (gridCellHeight/2);
+        return CGSizeMake(width, height); // indexPath
+	}
 }
 
 - (NSInteger)numberOfRowsInSpreadsheetView:(MMSpreadsheetView *)spreadsheetView {
@@ -248,8 +260,6 @@
 }
 
 - (NSInteger)numberOfColumnsInSpreadsheetView:(MMSpreadsheetView *)spreadsheetView {
-//    NSArray *rowData = [self.tableData firstObject];
-//    NSInteger cols = [rowData count];
     return cols + NUM_HEADER_COLS;
 }
 

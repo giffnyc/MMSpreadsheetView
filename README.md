@@ -7,6 +7,9 @@
 
 ---
 
+NOTE: THIS CODE IS STILL UNDERGOING CHANGE. MANY NSLOGS STILL INCLUDED TO ASSIST IN TWEAKING CODE.
+This comment will be removed when dhoerl believes its complete.
+
 Notes from dhoerl:
 
 Sept 2015
@@ -28,6 +31,10 @@ Nov 2015
 * Hide a tab bar when rotating to landscape on a "Compact Vertical" device (and reshow it later)
 * Added a completely new Example Project (Example2 folder) which puts the spreadsheet in a nav controller in a tab view and demos all the new features
 * New Demo is Universal (can be used on phone or iPad)
+* Reconcile scroller if it was at the bottom then rotated.
+
+Note that the original authors present a caveat on performance. Really, the performance of this class will depend on the base
+performance of UICollectionView - there is nothing out of the ordinary about what the class does otherwise.
 
 ---
 

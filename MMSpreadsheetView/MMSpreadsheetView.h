@@ -383,6 +383,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)hideTabBar:(BOOL)hide withAnimationDuration:(CGFloat)animateDuration coordinator:(nullable id<UIViewControllerTransitionCoordinator>)coordinator;
 
+- (void)correctContentOffset;
+
 @end
 
 @interface MMRefreshControl: UIView		// UIView

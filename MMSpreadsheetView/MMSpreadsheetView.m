@@ -157,6 +157,7 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 
 	[self setupSubviews];
 
+	[self hideTabBar:NO withAnimationDuration: 0 coordinator: nil];	// sets proper inset for translucent tab bar if scrolling underneath it
 }
 
 - (void)hideTabBar:(BOOL)hide withAnimationDuration:(CGFloat)animateDuration coordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
@@ -171,23 +172,24 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 		CGPoint contentOffsetLeft = _lowerLeftCollectionView.contentOffset;
 		CGPoint contentOffsetRight = _lowerRightCollectionView.contentOffset;
 
-		BOOL lowerLeftAtMax = lround(contentOffsetLeft.y) == lround([self maxOffset:_lowerLeftCollectionView withInset:loadingInsetLeft]);
-		BOOL lowerRightAtMax = lround(contentOffsetRight.y) == lround([self maxOffset:_lowerRightCollectionView withInset:loadingInsetRight]);
+		BOOL lowerLeftAtMax = fabs(contentOffsetLeft.y - [self maxOffset:_lowerLeftCollectionView withInset:loadingInsetLeft]) < 3;	// possible rounding so make it close
+		BOOL lowerRightAtMax = fabs(contentOffsetRight.y - [self maxOffset:_lowerRightCollectionView withInset:loadingInsetRight]) < 3;
 
 		loadingInsetLeft.bottom = offset;
 		loadingInsetRight.bottom = offset;
 
-		CGFloat maxLeftOffset = [self maxOffset:_lowerLeftCollectionView withInset:loadingInsetLeft];
-		CGFloat maxRightOffset = [self maxOffset:_lowerRightCollectionView withInset:loadingInsetRight];
+		if(!coordinator) {
+			CGFloat maxLeftOffset = [self maxOffset:_lowerLeftCollectionView withInset:loadingInsetLeft];
+			CGFloat maxRightOffset = [self maxOffset:_lowerRightCollectionView withInset:loadingInsetRight];
 
-		if(hide) {
-			contentOffsetLeft.y = MIN(contentOffsetLeft.y, maxLeftOffset);
-			contentOffsetRight.y = MIN(contentOffsetRight.y, maxRightOffset);
-		} else {
-			if(lowerLeftAtMax) contentOffsetLeft.y = maxLeftOffset;
-			if(lowerRightAtMax) contentOffsetRight.y = maxRightOffset;
+			if(hide) {
+				contentOffsetLeft.y = MIN(contentOffsetLeft.y, maxLeftOffset);
+				contentOffsetRight.y = MIN(contentOffsetRight.y, maxRightOffset);
+			} else {
+				if(lowerLeftAtMax) contentOffsetLeft.y = maxLeftOffset;
+				if(lowerRightAtMax) contentOffsetRight.y = maxRightOffset;
+			}
 		}
-
 		dispatch_block_t code = ^{
 			self.lowerLeftCollectionView.contentInset = loadingInsetLeft;
 			self.lowerRightCollectionView.contentInset = loadingInsetRight;
@@ -220,7 +222,7 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 					tabBar.frame = r;
 					[tabBar setHidden:YES];
 				}
-				//NSLog(@"ContentInset=%d offset=%d", (int)self.lowerRightCollectionView.contentInset.bottom, (int)self.lowerRightCollectionView.contentOffset.y);
+				[self correctContentOffset:lowerLeftAtMax];
 			};
 
 			if(coordinator) {
@@ -240,10 +242,26 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 	}
 }
 
+- (void)correctContentOffset:(BOOL)wasAtMax {
+	CGFloat maxLeftOffset = [self maxOffset:self.lowerLeftCollectionView withInset:self.lowerLeftCollectionView.contentInset];
+	CGFloat maxRightOffset = [self maxOffset:self.lowerRightCollectionView withInset:self.lowerRightCollectionView.contentInset];
+	CGPoint contentOffsetLeft = self.lowerLeftCollectionView.contentOffset;
+	CGPoint contentOffsetRight = self.lowerRightCollectionView.contentOffset;
+	if(contentOffsetLeft.y > maxLeftOffset || wasAtMax) {
+		contentOffsetLeft.y = maxLeftOffset;
+		self.lowerLeftCollectionView.contentOffset = contentOffsetLeft;
+	}
+	if(contentOffsetRight.y > maxRightOffset || wasAtMax) {
+		contentOffsetRight.y = maxRightOffset;
+		self.lowerRightCollectionView.contentOffset = contentOffsetRight;
+	}
+}
+
 - (CGFloat)maxOffset:(UIScrollView *)scrollView withInset:(UIEdgeInsets)insets {
 	CGFloat h1 = scrollView.contentSize.height;
 	CGFloat h2 = scrollView.bounds.size.height;
 	CGFloat maxOffset = h1 - h2 + insets.top + insets.bottom;
+	//NSLog(@"MAX-OFFSET: h1=%d h2=%d top=%d bot=%d ====> %d", (int)h1, (int)h2, (int)insets.top, (int)insets.bottom, (int)maxOffset);
 	if(maxOffset < 0) maxOffset = 0;
 	return maxOffset;
 }
@@ -436,7 +454,7 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
         case MMSpreadsheetHeaderConfigurationBoth: {
             CGSize size = self.upperLeftCollectionView.collectionViewLayout.collectionViewContentSize;
 			CGSize boundsSize = self.bounds.size;
-#if 0 // trying to be cute, maybe in portrait it won't show a whole data cell, well then rotate it. Bottom line: test on a 4s!
+#if 0 // trying to be helpful, maybe in portrait it won't show a whole data cell, well then rotate it it would. Bottom line: test on a 4s!
             CGSize cellSize = [self collectionView:self.lowerRightCollectionView
                                             layout:self.lowerRightCollectionView.collectionViewLayout
                             sizeForItemAtIndexPath:indexPathZero];
@@ -588,11 +606,6 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 - (void)initializeCollectionViewLayoutItemSize:(UICollectionView *)collectionView name:(NSString*)name {
     MMGridLayout *layout = (MMGridLayout *)collectionView.collectionViewLayout;
     layout.name = name;
-//    NSIndexPath *indexPathZero = [NSIndexPath indexPathForItem:0 inSection:0];
-//    CGSize size = [self collectionView:collectionView
-//                                layout:layout
-//                sizeForItemAtIndexPath:indexPathZero];
-//    layout.itemSize = size; DFH
 }
 
 #pragma mark - Scroll Indicator

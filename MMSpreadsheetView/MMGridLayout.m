@@ -163,9 +163,6 @@
 
 
 	NSInteger capacity = (1+endRow-startRow)*(1+endCol-startCol);
-//NSLog(@"Capacity=%d", (int)capacity);
-
-
     NSMutableArray *attributes = [NSMutableArray arrayWithCapacity:capacity];
     for (NSUInteger row = startRow; row <= endRow; row++) {
         for (NSUInteger col = startCol; col <=  endCol; col++) {

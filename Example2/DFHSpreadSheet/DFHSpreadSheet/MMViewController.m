@@ -53,14 +53,17 @@
 	self.navigationController.navigationBar.translucent = NO;
 	//self.tabBarController.tabBar.translucent = NO;
 
-	self.navigationController.hidesBarsWhenVerticallyCompact = YES;
+	//self.navigationController.hidesBarsWhenVerticallyCompact = YES;
 	self.navigationController.hidesBarsOnSwipe = YES;
+	self.navigationController.hidesBarsOnTap = NO;
 
 	rows = 11;
 	cols = 9;
 
-    // Create some fake grid data for the demo.
     self.tableData = [NSMutableArray array];
+
+#if 1	// test that it works with no row data
+    // Create some fake grid data for the demo.
 	for (NSUInteger rowNumber = 0; rowNumber < rows; rowNumber++) {
 		NSMutableArray *row = [NSMutableArray array];
 		for (NSUInteger columnNumber = 0; columnNumber < cols; columnNumber++) {
@@ -71,6 +74,7 @@
 		
 	}
 	//[spreadSheetView reloadData];
+#endif
 
 #if 0
 	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1000 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^
@@ -165,11 +169,15 @@
     spreadSheetView.delegate = self;
     spreadSheetView.dataSource = self;
 
-	spreadSheetView.snapToGrid = YES;
-	spreadSheetView.directionalLockEnabled = YES;
+//[NSTimer scheduledTimerWithTimeInterval:2 target:self selector:@selector(timer:) userInfo:nil repeats:YES];
+
 }
 
--(IBAction)toggleTabBar:(UIBarButtonItem *)sender {
+//- (void)timer:(NSTimer *)t {
+//	NSLog(@"didSelectItemAtIndexPath FRAME: %@ BOUNDS %@ RF %@", NSStringFromCGRect(spreadSheetView.frame), NSStringFromCGRect(spreadSheetView.bounds), NSStringFromCGRect(spreadSheetView.refreshControl.frame));
+//}
+
+- (IBAction)toggleTabBar:(UIBarButtonItem *)sender {
 	if(tabBarHidden) {
 		tabBarHidden = NO;
 		[spreadSheetView hideTabBar:YES withAnimationDuration:0.250 coordinator:nil];
@@ -180,8 +188,13 @@
 }
 
 - (void)willTransitionToTraitCollection:(UITraitCollection *)newCollection withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
-	UITabBar *tBar = self.tabBarController.tabBar;
 	BOOL shouldHide = newCollection.verticalSizeClass == UIUserInterfaceSizeClassCompact;
+	if(shouldHide && !self.navigationController.navigationBar.isHidden) {
+		// put here to stop the "tap" gesture popping the nav controller open again
+		self.navigationController.hidesBarsWhenVerticallyCompact = YES;
+	}
+
+	UITabBar *tBar = self.tabBarController.tabBar;
 	BOOL changeState = (shouldHide && !tBar.isHidden) || (!shouldHide && tBar.isHidden);
 	if(changeState) {
 		// Hide or unhide the Tab Bar on a phone (device with some compact dimension)
@@ -189,6 +202,14 @@
 	}
 }
 
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+	[super traitCollectionDidChange:previousTraitCollection];
+
+	dispatch_async(dispatch_get_main_queue(), ^{
+		self.navigationController.hidesBarsWhenVerticallyCompact = NO;
+		//[spreadSheetView correctContentOffset];
+	});
+}
 
 /*
 	override func willTransitionToTraitCollection(newCollection: UITraitCollection, withTransitionCoordinator coordinator: UIViewControllerTransitionCoordinator) {
@@ -217,7 +238,7 @@
 - (void)refreshControlActive:(MMRefreshControl *)control {
 	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2000 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^
 	{
-		[spreadSheetView.refreshControl stopRefresh];
+		[control stopRefresh];
 	});
 }
 
@@ -230,17 +251,17 @@
     CGFloat gridCellHeight = 103.0f;
 
     // Upper left.
-    if (indexPath.mmSpreadsheetRow == 0 && indexPath.mmSpreadsheetColumn == 0) {
+    if (indexPath.mmSpreadsheetRow < NUM_HEADER_ROWS && indexPath.mmSpreadsheetColumn == 0) {
         return CGSizeMake(leftColumnWidth, topRowHeight);
     }
     
     // Upper right.
-    if (indexPath.mmSpreadsheetRow == 0 && indexPath.mmSpreadsheetColumn > 0) {
+    if (indexPath.mmSpreadsheetRow < NUM_HEADER_ROWS && indexPath.mmSpreadsheetColumn > 0) {
 		return CGSizeMake(gridCellWidth + (indexPath.mmSpreadsheetColumn - NUM_HEADER_COLS ) * 10, topRowHeight);
     }
     
     // Lower left.
-    if (indexPath.mmSpreadsheetRow > 0 && indexPath.mmSpreadsheetColumn == 0) {
+    if (indexPath.mmSpreadsheetRow >= NUM_HEADER_ROWS && indexPath.mmSpreadsheetColumn == 0) {
 		CGFloat width = leftColumnWidth;
 		CGFloat height = (indexPath.mmSpreadsheetRow % 2) ? gridCellHeight : (gridCellHeight/2);
         return CGSizeMake(width, height); // indexPath
@@ -255,7 +276,7 @@
 }
 
 - (NSInteger)numberOfRowsInSpreadsheetView:(MMSpreadsheetView *)spreadsheetView {
-    NSInteger num = [self.tableData count] + NUM_HEADER_COLS;
+    NSInteger num = [self.tableData count] + NUM_HEADER_ROWS;
     return num;
 }
 
@@ -265,7 +286,7 @@
 
 - (UICollectionViewCell *)spreadsheetView:(MMSpreadsheetView *)spreadsheetView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
     UICollectionViewCell *cell = nil;
-    if (indexPath.mmSpreadsheetRow == 0 && indexPath.mmSpreadsheetColumn == 0) {
+    if (indexPath.mmSpreadsheetRow < NUM_HEADER_ROWS && indexPath.mmSpreadsheetColumn == 0) {
         // Upper left.
         cell = [spreadsheetView dequeueReusableCellWithReuseIdentifier:@"GridCell" forIndexPath:indexPath];
         MMGridCell *gc = (MMGridCell *)cell;
@@ -275,7 +296,7 @@
         gc.textLabel.numberOfLines = 0;
         cell.backgroundColor = [UIColor colorWithWhite:0.9f alpha:1.0f];
     }
-    else if (indexPath.mmSpreadsheetRow == 0 && indexPath.mmSpreadsheetColumn > 0) {
+    else if (indexPath.mmSpreadsheetRow < NUM_HEADER_ROWS && indexPath.mmSpreadsheetColumn > 0) {
         // Upper right.
         cell = [spreadsheetView dequeueReusableCellWithReuseIdentifier:@"TopRowCell" forIndexPath:indexPath];
         MMTopRowCell *tr = (MMTopRowCell *)cell;
@@ -315,6 +336,8 @@
 #pragma mark - MMSpreadsheetViewDelegate
 
 - (void)spreadsheetView:(MMSpreadsheetView *)spreadsheetView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
+//NSLog(@"didSelectItemAtIndexPath FRAME: %@ BOUNDS %@", NSStringFromCGRect(spreadsheetView.frame), NSStringFromCGRect(spreadsheetView.bounds));
+
     if ([self.selectedGridCells containsObject:indexPath]) {
         [self.selectedGridCells removeObject:indexPath];
         [spreadsheetView deselectItemAtIndexPath:indexPath animated:YES];

@@ -83,6 +83,9 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 {
 	CGFloat ratio;
 	CGFloat startValue;
+
+	UIPanGestureRecognizer *oldLowerLeft;
+	UIPanGestureRecognizer *newLowerLeft;
 }
 
 - (instancetype)init {
@@ -99,7 +102,7 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 
 - (instancetype)initWithCoder:(NSCoder *)coder {
 	if((self = [super initWithCoder:coder])) {
-//		Apple bug iOS9.1 (weirdness) - the first view gets hosed by iOS during view loading/presentation - may not be necessary here
+		// Apple bug iOS9.1 (weirdness) - the first view gets hosed by iOS during view loading/presentation - may not be necessary here
 //		UIView *v = [UIView new];
 //		[self addSubview:v];
 
@@ -137,7 +140,7 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
 
 	if(_wantRefreshControl) {
 		// 88 is the height of a standard UIRefreshControl. The left/right offsets are to hide the layer border (see initWithFrame)
-		self.refreshControl = [[MMRefreshControl alloc] initWithFrame:CGRectMake(-1, -88, self.bounds.size.width+2, 88)];
+		self.refreshControl = [[MMRefreshControl alloc] initWithFrame:CGRectMake(-1, -88, self.frame.size.width+2, 88)];
 		_refreshControl.autoresizingMask = UIViewAutoresizingFlexibleWidth;
 		[self addSubview:_refreshControl];
 	}
@@ -363,17 +366,44 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
                  collectionView:self.upperRightCollectionView
                             tag:MMSpreadsheetViewCollectionUpperRight];
 
-	self.upperRightCollectionView.alwaysBounceVertical = YES;
+	self.upperRightCollectionView.alwaysBounceVertical = NO;
 }
 
 - (void)setupLowerLeftView {
     self.lowerLeftContainerView = [[UIView alloc] initWithFrame:CGRectZero];
     self.lowerLeftCollectionView = [self setupCollectionViewWithGridLayout];
-	[self.lowerLeftCollectionView.panGestureRecognizer addTarget:self action:@selector(handleLowerLeftPanGesture:)];
+
+//oldLowerLeft = _lowerLeftCollectionView.panGestureRecognizer;
+//newLowerLeft = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleLowerLeftPanGesture:)];
+//
+//newLowerLeft.maximumNumberOfTouches = oldLowerLeft.maximumNumberOfTouches;
+//newLowerLeft.minimumNumberOfTouches = oldLowerLeft.minimumNumberOfTouches;
+//newLowerLeft.cancelsTouchesInView = oldLowerLeft.cancelsTouchesInView;
+//newLowerLeft.delaysTouchesBegan = oldLowerLeft.delaysTouchesBegan;
+//newLowerLeft.delaysTouchesEnded = oldLowerLeft.delaysTouchesEnded;
+//
+//newLowerLeft.delegate = self;
+
+//_lowerLeftCollectionView.scrollEnabled = NO;
+//[_lowerLeftCollectionView addGestureRecognizer:newLowerLeft];
+
+
+	[self.lowerLeftCollectionView.panGestureRecognizer addTarget:self action:@selector(handleLowerLeftPanGesture:)]; // GOOD
 
     [self setupContainerSubview:self.lowerLeftContainerView
                  collectionView:self.lowerLeftCollectionView
                             tag:MMSpreadsheetViewCollectionLowerLeft];
+}
+
+// xxx
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+	UIPanGestureRecognizer *panG = _navigationController.barHideOnSwipeGestureRecognizer;
+	if(otherGestureRecognizer == panG) NSLog(@"Other: PANG state=%d hidden%d", (int)panG.state, _navigationController.navigationBarHidden);
+	if(otherGestureRecognizer == oldLowerLeft) NSLog(@"Other: OLD LOWER LEFT");
+	//NSLog(@"ASKED to match %@ with %@", gestureRecognizer, otherGestureRecognizer);
+
+	return true;
 }
 
 - (void)setupLowerRightView {
@@ -439,34 +469,36 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
             
         case MMSpreadsheetHeaderConfigurationBoth: {
             CGSize size = self.upperLeftCollectionView.collectionViewLayout.collectionViewContentSize;
+			CGSize boundsSize = self.bounds.size;
+#if 0 // trying to be cute, maybe in portrait it won't show a whole data cell, well then rotate it. Bottom line: test on a 4s!
             CGSize cellSize = [self collectionView:self.lowerRightCollectionView
                                             layout:self.lowerRightCollectionView.collectionViewLayout
                             sizeForItemAtIndexPath:indexPathZero];
-            CGFloat maxLockDistance = self.bounds.size.height - cellSize.height;
+            CGFloat maxLockDistance = boundsSize.height - cellSize.height;
             if (size.height > maxLockDistance) {
                 NSAssert(NO, @"Height of header too large! Reduce the number of header rows.");
             }
-            maxLockDistance = self.bounds.size.width - cellSize.width;
+            maxLockDistance = boundsSize.width - cellSize.width;
             if (size.width > maxLockDistance) {
                 NSAssert(NO, @"Width of header too large! Reduce the number of header columns.");
             }
-            
+#endif
             self.upperLeftContainerView.frame = CGRectMake(0.0f,
                                                            0.0f,
                                                            size.width,
                                                            size.height);
             self.upperRightContainerView.frame = CGRectMake(size.width + MMSpreadsheetViewGridSpace,
                                                             0.0f,
-                                                            self.bounds.size.width - size.width - MMSpreadsheetViewGridSpace,
+                                                            boundsSize.width - size.width - MMSpreadsheetViewGridSpace,
                                                             size.height);
             self.lowerLeftContainerView.frame = CGRectMake(0.0f,
                                                            size.height + MMSpreadsheetViewGridSpace,
                                                            size.width,
-                                                           self.bounds.size.height - size.height - MMSpreadsheetViewGridSpace);
+                                                           boundsSize.height - size.height - MMSpreadsheetViewGridSpace);
             self.lowerRightContainerView.frame = CGRectMake(size.width + MMSpreadsheetViewGridSpace,
                                                             size.height + MMSpreadsheetViewGridSpace,
-                                                            self.bounds.size.width - size.width - MMSpreadsheetViewGridSpace,
-                                                            self.bounds.size.height - size.height - MMSpreadsheetViewGridSpace);
+                                                            boundsSize.width - size.width - MMSpreadsheetViewGridSpace,
+                                                            boundsSize.height - size.height - MMSpreadsheetViewGridSpace);
             break;
         }
             
@@ -509,14 +541,27 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
         self.upperRightContainerView.userInteractionEnabled = NO;
         self.lowerRightContainerView.userInteractionEnabled = NO;
 
-		CGPoint pt = [recognizer velocityInView:self];
-		//NSLog(@"VELOCITY: %@", NSStringFromCGPoint(pt));
-		if(pt.y > HIDE_NAVBAR_VELOCITY_THRESH) {
-			[_navigationController setNavigationBarHidden:NO animated:YES];
-		} else
-		if(pt.y < -HIDE_NAVBAR_VELOCITY_THRESH) {
-			[_navigationController setNavigationBarHidden:YES animated:YES];
-		}
+//		CGPoint pt = [recognizer velocityInView:self];
+//		if(pt.y < 0 && _lowerLeftCollectionView.scrollEnabled == NO && _navigationController.navigationBarHidden) {
+//			NSLog(@"HIDE IT!");
+//			_lowerLeftCollectionView.scrollEnabled = YES;
+//		} else
+//		if(pt.y > 0 && _lowerLeftCollectionView.scrollEnabled == YES && !_navigationController.navigationBarHidden) {
+//			_lowerLeftCollectionView.scrollEnabled = NO;
+//			NSLog(@"SHOW IT!");
+//		}
+
+
+//		CGPoint pt = [recognizer velocityInView:self];
+//		//NSLog(@"VELOCITY: %@", NSStringFromCGPoint(pt));
+//		if(pt.y > HIDE_NAVBAR_VELOCITY_THRESH) {
+//NSLog(@"YIKES!!!");
+//			[_navigationController setNavigationBarHidden:NO animated:YES];
+//		} else
+//		if(pt.y < -HIDE_NAVBAR_VELOCITY_THRESH) {
+//NSLog(@"YIKES!!!");
+//			[_navigationController setNavigationBarHidden:YES animated:YES];
+//		}
     }
     else if (recognizer.state == UIGestureRecognizerStateEnded) {
         if (self.isLowerLeftBouncing == NO) {
@@ -532,14 +577,14 @@ const static NSUInteger MMScrollIndicatorTag = 12345;
         self.upperRightContainerView.userInteractionEnabled = NO;
         self.lowerLeftContainerView.userInteractionEnabled = NO;
 
-		CGPoint pt = [recognizer velocityInView:self];
-		//NSLog(@"VELOCITY: %@", NSStringFromCGPoint(pt));
-		if(pt.y > HIDE_NAVBAR_VELOCITY_THRESH*2) {
-			[_navigationController setNavigationBarHidden:NO animated:YES];
-		} else
-		if(pt.y < HIDE_NAVBAR_VELOCITY_THRESH) {
-			[_navigationController setNavigationBarHidden:YES animated:YES];
-		}
+//		CGPoint pt = [recognizer velocityInView:self];
+//		//NSLog(@"VELOCITY: %@", NSStringFromCGPoint(pt));
+//		if(pt.y > HIDE_NAVBAR_VELOCITY_THRESH*2) {
+//			[_navigationController setNavigationBarHidden:NO animated:YES];
+//		} else
+//		if(pt.y < HIDE_NAVBAR_VELOCITY_THRESH) {
+//			[_navigationController setNavigationBarHidden:YES animated:YES];
+//		}
     }
     else if (recognizer.state == UIGestureRecognizerStateEnded) {
         if (self.isLowerRightBouncing == NO) {

@@ -149,14 +149,14 @@
 
 	spreadSheetView = (MMSpreadsheetView *)self.view;
 	spreadSheetView.navigationController = self.navigationController;
-	spreadSheetView.wantRefreshControl = YES;
+	spreadSheetView.wantRefreshControl = NO;
 
 	[spreadSheetView commonInitWithNumberOfHeaderRows:NUM_HEADER_ROWS numberOfHeaderColumns:NUM_HEADER_COLS];
 	spreadSheetView.bounces = YES;
 	spreadSheetView.horizontalBounce = NO;
 	spreadSheetView.verticalBounce = YES;
 	spreadSheetView.directionalLockEnabled = YES;
-	spreadSheetView.snapToGrid = YES;
+	//spreadSheetView.snapToGrid = NO;
 
 	spreadSheetView.backgroundColor = [UIColor grayColor];
 

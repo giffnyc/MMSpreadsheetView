@@ -1,4 +1,5 @@
 // Copyright (c) 2013 Mutual Mobile (http://mutualmobile.com/)
+// Copyright (c) 2015 David Hoerl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -19,7 +20,6 @@
 // THE SOFTWARE.
 
 #import "MMGridLayout.h"
-#import "MMSpreadsheetView.h"
 
 @interface MMGridLayout ()
 
@@ -34,87 +34,78 @@
 
 @implementation MMGridLayout
 {
-    CGFloat _cellSpacing;
+	CGFloat _cellSpacing;
 }
 @dynamic cellSpacing;
 
 - (instancetype)init {
-    self = [super init];
-    if (self) {
-        _cellSpacing = 1.0f;
-        //_itemSize = CGSizeMake(120.0f+_cellSpacing, 120.0f+_cellSpacing);
-    }
-    return self;
+	if((self = [super init])) {
+		_cellSpacing = 1.0f;
+	}
+	return self;
 }
-
-//- (void)setItemSize:(CGSize)itemSize {
-//    _itemSize = CGSizeMake(itemSize.width + self.cellSpacing, itemSize.height + self.cellSpacing);
-//    [self invalidateLayout];
-//}
 
 - (CGFloat)cellSpacing {
-    return _cellSpacing;
+	return _cellSpacing;
 }
 - (void)setCellSpacing:(CGFloat)cellSpacing {
-    _cellSpacing = cellSpacing;
-    [self invalidateLayout];
+	_cellSpacing = cellSpacing;
+	[self invalidateLayout];
 }
 
 - (void)prepareLayout {
-    [super prepareLayout];
-    self.gridRowCount = [self.collectionView numberOfSections];
-    self.gridColumnCount = [self.collectionView numberOfItemsInSection:0];
-	if(_gridColumnCount == 0 || _gridRowCount == 0) {
+	[super prepareLayout];
+	self.gridRowCount = [self.collectionView numberOfSections];
+	self.gridColumnCount = [self.collectionView numberOfItemsInSection:0];
+	if(_gridColumnCount == 0 || _gridRowCount == 0) {  // DFH added _gridRowCount == 0
 		return; // No data to show
 	}
 
-    if (!_isInitialized) {
-        self.widths = [NSMutableArray arrayWithCapacity:_gridColumnCount];
-        self.heights = [NSMutableArray arrayWithCapacity:_gridRowCount];
-        id<UICollectionViewDelegateFlowLayout> delegate = (id)self.collectionView.delegate;
+	if (!_isInitialized) {
+		self.widths = [NSMutableArray arrayWithCapacity:_gridColumnCount];
+		self.heights = [NSMutableArray arrayWithCapacity:_gridRowCount];
+		id<UICollectionViewDelegateFlowLayout> delegate = (id)self.collectionView.delegate;
 
-        //CGSize size = CGSizeMake(0, 0);
-        for (NSInteger i = 0; i < _gridColumnCount; i++) {
-            CGSize size = [delegate collectionView:self.collectionView layout:self sizeForItemAtIndexPath:[NSIndexPath indexPathForItem:i inSection:0]];
-            [_widths addObject:@(size.width + _cellSpacing)];
-        }
+		for (NSInteger i = 0; i < _gridColumnCount; i++) {
+			CGSize size = [delegate collectionView:self.collectionView layout:self sizeForItemAtIndexPath:[NSIndexPath indexPathForItem:i inSection:0]];
+			[_widths addObject:@(size.width + _cellSpacing)];
+		}
 
-        for (NSInteger i = 0; i < _gridRowCount; i++) {
-            CGSize size = [delegate collectionView:self.collectionView layout:self sizeForItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:i]];
-            [_heights addObject:@(size.height + _cellSpacing)];
-        }
+		for (NSInteger i = 0; i < _gridRowCount; i++) {
+			CGSize size = [delegate collectionView:self.collectionView layout:self sizeForItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:i]];
+			[_heights addObject:@(size.height + _cellSpacing)];
+		}
 
-        //self.itemSize = size;
-        self.isInitialized = YES;
-    }
+		self.isInitialized = YES;
+	}
 }
 
 - (CGSize)collectionViewContentSize {
-    if (!_isInitialized) {
-        [self prepareLayout];
-    }
+	if (!_isInitialized) {
+		[self prepareLayout];
+	}
 
-    CGFloat sumWidth = 0;
-    CGFloat sumHeight = 0;
-    for (NSNumber *w in _widths) {
-        sumWidth += (CGFloat)[w doubleValue];
-    }
-    for (NSNumber *h in _heights) {
-        sumHeight += (CGFloat)[h doubleValue];
-    }
+	CGFloat sumWidth = 0;
+	CGFloat sumHeight = 0;
+	for (NSNumber *w in _widths) {
+		sumWidth += (CGFloat)[w doubleValue];
+	}
+	for (NSNumber *h in _heights) {
+		sumHeight += (CGFloat)[h doubleValue];
+	}
 
-    CGSize size = CGSizeMake(sumWidth, sumHeight);
+	CGSize size = CGSizeMake(sumWidth, sumHeight);
 	// NSLog(@"CONTENT SIZE %@ col=%d row=%d", NSStringFromCGSize(size), (int)_gridColumnCount, (int)_gridRowCount);
-    return size;
+	return size;
 }
 
 - (NSArray *)layoutAttributesForElementsInRect:(CGRect)rect {
-	if(_gridColumnCount == 0 || _gridRowCount == 0) { // DFH just added _gridRowCount == 0
-		return [NSArray array];	// No data to show
+	if(_gridColumnCount == 0 || _gridRowCount == 0) { // DFH added _gridRowCount == 0
+		return [NSArray array]; // No data to show
 	}
 
-    NSInteger startCol = -1;
-    NSInteger endCol = _gridColumnCount - 1;
+	NSInteger startCol = -1;
+	NSInteger endCol = _gridColumnCount - 1; 	// Had to do this to avoid some bizarre crash
 	{
 		CGFloat widthSum = 0;
 		for (NSInteger i = 0; i < _gridColumnCount; i++) {
@@ -131,17 +122,16 @@
 		}
 		endCol = MIN(_gridColumnCount - 1, endCol);
 	}
-//NSLog(@"COL: %d %d", (int)startCol, (int)endCol);
+	//NSLog(@"COL: %d %d", (int)startCol, (int)endCol);
 
 
-    NSInteger startRow = -1;
-    NSInteger endRow = _gridRowCount - 1;
+	NSInteger startRow = -1;
+	NSInteger endRow = _gridRowCount - 1;	// Had to do this to avoid some bizarre crash
 	{
 		CGFloat heightSum = 0;
 		for (NSInteger i = 0; i < _gridRowCount; i++) {
 			heightSum += (CGFloat)[_heights[i] doubleValue];
-
-//NSLog(@"TEST: %lf to %lf MAXY %lf", (double)heightSum, (double)rect.origin.y, (double)CGRectGetMaxY(rect));
+			//NSLog(@"TEST: %lf to %lf MAXY %lf", (double)heightSum, (double)rect.origin.y, (double)CGRectGetMaxY(rect));
 
 			if (heightSum > rect.origin.y && startRow < 0) {
 				startRow = i;
@@ -154,51 +144,50 @@
 		}
 		endRow = MIN(_gridRowCount - 1, endRow);
 	}
-//NSLog(@"NEW ROW: %d %d", (int)startRow, (int)endRow);
-
-//startRow = lround( floorf(rect.origin.y / [_heights[0] doubleValue]) );
-//endRow = MIN(_gridRowCount - 1, ceilf(CGRectGetMaxY(rect) / [_heights[0] doubleValue]));
-//
-//NSLog(@"GOOD ROW: %d %d", (int)startRow, (int)endRow);
+	//NSLog(@"NEW ROW: %d %d", (int)startRow, (int)endRow);
+	//startRow = lround( floorf(rect.origin.y / [_heights[0] doubleValue]) );
+	//endRow = MIN(_gridRowCount - 1, ceilf(CGRectGetMaxY(rect) / [_heights[0] doubleValue]));
+	//NSLog(@"GOOD ROW: %d %d", (int)startRow, (int)endRow);
 
 
 	NSInteger capacity = (1+endRow-startRow)*(1+endCol-startCol);
-    NSMutableArray *attributes = [NSMutableArray arrayWithCapacity:capacity];
-    for (NSUInteger row = startRow; row <= endRow; row++) {
-        for (NSUInteger col = startCol; col <=  endCol; col++) {
-            NSIndexPath *indexPath = [NSIndexPath indexPathForItem:col inSection:row];
-            UICollectionViewLayoutAttributes *layoutAttributes = [self layoutAttributesForItemAtIndexPath:indexPath];
-            [attributes addObject:layoutAttributes];
-        }
-    }
-    return attributes;
+	NSMutableArray *attributes = [NSMutableArray arrayWithCapacity:capacity];
+	for (NSUInteger row = startRow; row <= endRow; row++) {
+		for (NSUInteger col = startCol; col <=	endCol; col++) {
+			NSIndexPath *indexPath = [NSIndexPath indexPathForItem:col inSection:row];
+			UICollectionViewLayoutAttributes *layoutAttributes = [self layoutAttributesForItemAtIndexPath:indexPath];
+			[attributes addObject:layoutAttributes];
+		}
+	}
+	return attributes;
 }
 
 - (UICollectionViewLayoutAttributes *)layoutAttributesForItemAtIndexPath:(NSIndexPath *)indexPath {
-    UICollectionViewLayoutAttributes *attributes = [UICollectionViewLayoutAttributes layoutAttributesForCellWithIndexPath:indexPath];
+	UICollectionViewLayoutAttributes *attributes = [UICollectionViewLayoutAttributes layoutAttributesForCellWithIndexPath:indexPath];
 
 
-    CGFloat widthSum = 0;
+	CGFloat widthSum = 0;
 	{
 		for (NSInteger i = 0; i < indexPath.item; i++) {
 			widthSum += (CGFloat)[_widths[i] doubleValue];
 		}
 	}
 
-    CGFloat heightSum = 0;
+	CGFloat heightSum = 0;
 	{
 		for (NSInteger i = 0; i < indexPath.section; i++) {
 			heightSum += (CGFloat)[_heights[i] doubleValue];
 		}
 	}
 
-    CGRect frame = CGRectMake(widthSum, heightSum, (CGFloat)[_widths[indexPath.item] doubleValue] - _cellSpacing, (CGFloat)[_heights[indexPath.section] doubleValue] - _cellSpacing);
-    attributes.frame = frame;
-    return attributes;
+	CGFloat width = (CGFloat)[_widths[indexPath.item] doubleValue] - _cellSpacing;
+	CGFloat height = (CGFloat)[_heights[indexPath.section] doubleValue] - _cellSpacing;
+	attributes.frame = CGRectMake(widthSum, heightSum, width, height);
+	return attributes;
 }
 
 - (BOOL)shouldInvalidateLayoutForBoundsChange:(CGRect)newBounds {
-    return NO;
+	return NO;
 }
 
 - (CGPoint)snapToGrid:(CGPoint)startingPoint {

@@ -1,4 +1,5 @@
 // Copyright (c) 2013 Mutual Mobile (http://mutualmobile.com/)
+// Copyright (c) 2015 David Hoerl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -189,6 +190,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)refreshControlActive:(MMRefreshControl *)control;
 
+- (void)scrollViewFinishedScrolling;
+
 @end
 
 /**
@@ -352,14 +355,10 @@ NS_ASSUME_NONNULL_BEGIN
 /// @name Scroll View Properties
 ///---------------------------------------
 
-/**
- A Boolean value that controls whether the spreadsheet view bounces past the edge of content and back again.
- 
- @discussion If the value of this property is YES, the spreadsheet view bounces when it encounters a boundary of the content. Bouncing visually indicates that scrolling has reached an edge of the content. If the value is NO, scrolling stops immediately at the content boundary without bouncing. The default value is YES.
- */
 @property (nonatomic, assign) BOOL bounces;
 @property (nonatomic, assign) BOOL horizontalBounce;
 @property (nonatomic, assign) BOOL verticalBounce;
+@property (nonatomic, assign) BOOL scrollsToTop;
 
 /**
  A Boolean value that determines whether scrolling is disabled in a particular direction.
@@ -373,6 +372,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL wantRefreshControl;	// see extra delegate method
 @property (nonatomic, strong, nullable) UINavigationController *navigationController;	// when set, hide the Navigation bar on up-swipes, and show it on down-swipes
 @property (nonatomic, strong, nullable) MMRefreshControl *refreshControl;
+//@property (nonatomic, strong, readonly) UIScrollView *shadowScrollView;	// when received, the contentOffset is the offset of the bottom right scroll view
 
 // DFH: new to return the actual cell using a dataSourceIndexPath
 - (nullable UICollectionViewCell *)cellForItemAtDataSourceIndexPath:(NSIndexPath *)indexPath;

@@ -142,21 +142,22 @@
 
 
 
-	self.navigationController.navigationBar.translucent = NO;
-	self.navigationController.hidesBarsWhenVerticallyCompact = NO;
-	self.navigationController.hidesBarsOnSwipe = NO;
-	self.navigationController.hidesBarsOnTap = NO;
+	self.navigationController.navigationBar.translucent = YES;
+	self.navigationController.hidesBarsWhenVerticallyCompact = YES;
+	self.navigationController.hidesBarsOnSwipe = YES;
+	self.navigationController.hidesBarsOnTap = YES;
 
 	spreadSheetView = (MMSpreadsheetView *)self.view;
 	spreadSheetView.navigationController = self.navigationController;
-//spreadSheetView.wantRefreshControl = NO;
+	spreadSheetView.wantRefreshControl = YES;
 
 	[spreadSheetView commonInitWithNumberOfHeaderRows:NUM_HEADER_ROWS numberOfHeaderColumns:NUM_HEADER_COLS];
 	spreadSheetView.bounces = YES;
 	spreadSheetView.alwaysBounceHorizontal = YES;
 	spreadSheetView.alwaysBounceVertical = YES;
 	spreadSheetView.directionalLockEnabled = YES;
-	//spreadSheetView.snapToGrid = NO;
+	spreadSheetView.scrollsToTop = YES;
+	spreadSheetView.snapToGrid = YES;
 
 	spreadSheetView.backgroundColor = [UIColor grayColor];
 
@@ -180,19 +181,16 @@
 - (IBAction)toggleTabBar:(UIBarButtonItem *)sender {
 	if(tabBarHidden) {
 		tabBarHidden = NO;
-		[spreadSheetView hideTabBar:YES withAnimationDuration:0.250 coordinator:nil];
+		[spreadSheetView hideTabBar:NO withAnimationDuration:0.250 coordinator:nil];
 	} else {
 		tabBarHidden = YES;
-		[spreadSheetView hideTabBar:NO withAnimationDuration:0.250 coordinator:nil];
+		[spreadSheetView hideTabBar:YES withAnimationDuration:0.250 coordinator:nil];
 	}
 }
 
 - (void)willTransitionToTraitCollection:(UITraitCollection *)newCollection withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
 	BOOL shouldHide = newCollection.verticalSizeClass == UIUserInterfaceSizeClassCompact;
-	if(shouldHide && !self.navigationController.navigationBar.isHidden) {
-		// put here to stop the "tap" gesture popping the nav controller open again
-		self.navigationController.hidesBarsWhenVerticallyCompact = YES;
-	}
+	self.navigationController.hidesBarsWhenVerticallyCompact = YES;
 
 	UITabBar *tBar = self.tabBarController.tabBar;
 	BOOL changeState = (shouldHide && !tBar.isHidden) || (!shouldHide && tBar.isHidden);
@@ -200,14 +198,20 @@
 		// Hide or unhide the Tab Bar on a phone (device with some compact dimension)
 		[spreadSheetView  hideTabBar:shouldHide withAnimationDuration:0 coordinator:coordinator];
 	}
+//	UIView *vF = [coordinator viewForKey:UITransitionContextFromViewKey];
+//	UIView *vT = [coordinator viewForKey:UITransitionContextToViewKey];
+//NSLog(@" Views %@ %@", vF, vT);
+//
+//NSLog(@"START FRAME: %@", NSStringFromCGRect(vF.frame));
+//NSLog(@"FINAL FRAME: %@", NSStringFromCGRect(vT.frame));
 }
 
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
 	[super traitCollectionDidChange:previousTraitCollection];
 
 	dispatch_async(dispatch_get_main_queue(), ^{
+		// Prevents taps in the view from showing the nav bar in compact environments
 		self.navigationController.hidesBarsWhenVerticallyCompact = NO;
-		//[spreadSheetView correctContentOffset];
 	});
 }
 
@@ -235,12 +239,12 @@
 
 */
 
-//- (void)refreshControlActive:(MMRefreshControl *)control {
-//	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2000 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^
-//	{
-//		[control stopRefresh];
-//	});
-//}
+- (void)refreshControlActive:(MMRefreshControl *)control {
+	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2000 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^
+	{
+		[control stopRefresh];
+	});
+}
 
 #pragma mark - MMSpreadsheetViewDataSource
 

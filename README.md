@@ -12,6 +12,9 @@ This comment will be removed when dhoerl believes its complete.
 
 Notes from dhoerl:
 
+Nove 10th: totally redid how the view hierarchy works. Now the base view is a scrollview with one container voew, and the four collection views are subviews of it. This
+change drastically reduced the view manipulation code, so even with all the additions its now several hundred lines shorter! As of today I'm about 95% finished.
+
 Sept 2015
 * Added variable width columns using the patch file listed in the "Issues" section of the original repository. 
 * Added protective code to prevent crashes due to exact dimension matches (another original project Issue)

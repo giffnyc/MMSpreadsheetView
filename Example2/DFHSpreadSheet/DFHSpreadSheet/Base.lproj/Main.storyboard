@@ -98,7 +98,7 @@
         <!--Item-->
         <scene sceneID="cfH-qV-d2W">
             <objects>
-                <navigationController id="FHp-El-gBj" sceneMemberID="viewController">
+                <navigationController hidesBarsWhenVerticallyCompact="YES" id="FHp-El-gBj" sceneMemberID="viewController">
                     <tabBarItem key="tabBarItem" title="Item" id="1Oj-Ut-UoD"/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="TaU-7q-XCH">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="44"/>

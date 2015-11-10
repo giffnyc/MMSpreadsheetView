@@ -369,10 +369,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, assign) BOOL isScrolling;
 @property (nonatomic, assign) BOOL snapToGrid;
-//@property (nonatomic, assign) BOOL wantRefreshControl;	// see extra delegate method
+@property (nonatomic, assign) BOOL wantRefreshControl;	// see extra delegate method
 @property (nonatomic, strong, nullable) UINavigationController *navigationController;	// when set, hide the Navigation bar on up-swipes, and show it on down-swipes
 @property (nonatomic, strong, nullable) MMRefreshControl *refreshControl;
-//@property (nonatomic, strong, readonly) UIScrollView *shadowScrollView;	// when received, the contentOffset is the offset of the bottom right scroll view
 
 // DFH: new to return the actual cell using a dataSourceIndexPath
 - (nullable UICollectionViewCell *)cellForItemAtDataSourceIndexPath:(NSIndexPath *)indexPath;

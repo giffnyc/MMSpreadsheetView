@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 
 #import "MMSpreadsheetView.h"
-#import <QuartzCore/QuartzCore.h>
 #import "MMGridLayout.h"
 #import "NSIndexPath+MMSpreadsheetView.h"
 
@@ -41,12 +40,11 @@ typedef NS_ENUM(NSInteger, MMSpreadsheetHeaderConfiguration) {
 
 const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 
-@interface MMSpreadsheetView () <UICollectionViewDataSource, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout>	// UIGestureRecognizerDelegate
+@interface MMSpreadsheetView () <UICollectionViewDataSource, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout>
 
 @property (nonatomic, assign) NSUInteger headerRowCount;
 @property (nonatomic, assign) NSUInteger headerColumnCount;
 @property (nonatomic, assign) MMSpreadsheetHeaderConfiguration spreadsheetHeaderConfiguration;
-@property (nonatomic, strong) UIScrollView *controllingScrollView;
 @property (nonatomic, strong, readwrite) UIScrollView *shadowScrollView;
 
 @property (nonatomic, strong) UIView *containerView;	// size of top/left, and the full contentSize of the lower right
@@ -67,10 +65,10 @@ const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 
 @end
 
-static CGPoint maxContentOffset(UIScrollView *sv) {
+static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 	CGPoint pt =	CGPointMake(
-						MAX(sv.contentSize.width - sv.bounds.size.width + sv.contentInset.left + sv.contentInset.right, 0),
-						MAX(sv.contentSize.height - sv.bounds.size.height + sv.contentInset.top + sv.contentInset.bottom, 0)
+						MAX(sv.contentSize.width - sv.bounds.size.width + insets.left + insets.right, 0),
+						MAX(sv.contentSize.height - sv.bounds.size.height + insets.top + insets.bottom, 0)
 					);
 	return pt;
 }
@@ -80,6 +78,7 @@ static CGPoint maxContentOffset(UIScrollView *sv) {
 {
 	CGFloat ratio;
 	CGFloat startValue;
+	BOOL hidesBarsOnSwipe;
 }
 @synthesize shadowScrollView=__shadowScrollView;	// Make it harder to use directly with single '_'
 
@@ -89,7 +88,7 @@ static CGPoint maxContentOffset(UIScrollView *sv) {
 
 - (instancetype)initWithFrame:(CGRect)frame {
 	if((self = [super initWithFrame:frame])) {
-		// Call below in viewDidLoad
+		// Call in viewDidLoad
 		//[self commonInitWithNumberOfHeaderRows:0 numberOfHeaderColumns:0];
 		self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 	}
@@ -98,18 +97,16 @@ static CGPoint maxContentOffset(UIScrollView *sv) {
 
 - (instancetype)initWithCoder:(NSCoder *)coder {
 	if((self = [super initWithCoder:coder])) {
-		// Call below in viewDidLoad
+		// Call in viewDidLoad
 		//[self commonInitWithNumberOfHeaderRows:0 numberOfHeaderColumns:0];
 	}
-
 	return self;
 }
 
 
 - (void)setShadowScrollView:(UIScrollView *)shadowScrollView {
 	__shadowScrollView = shadowScrollView;
-
-NSLog(@"setShadowScrollView %d", (int)shadowScrollView.tag);
+	//NSLog(@"setShadowScrollView %d", (int)shadowScrollView.tag);
 
 	CGSize topLeft = _upperLeftCollectionView.bounds.size;
 	CGSize botRight = _lowerRightCollectionView.contentSize;
@@ -133,27 +130,36 @@ NSLog(@"setShadowScrollView %d", (int)shadowScrollView.tag);
 		origin = CGPointMake(0, shadowScrollView.contentOffset.y);
 		adjustHeight = YES;
 		break;
-
 	case MMSpreadsheetViewCollectionLowerRight:
 		origin = shadowScrollView.contentOffset;
 		adjustWidth = YES;
 		adjustHeight = YES;
 		break;
-
 	case MMSpreadsheetViewCollectionBase:	// this never happens here for completeness
 	default:
+		//NSLog(@"Switch back to primary: hidden=%d ========================================", self.navigationController.navigationBar.isHidden);
+		origin = CGPointMake(0, 1); // So tap on Status Bar is recognized
+		self.contentOffset = origin;
 		contentSize = CGSizeMake(	self.bounds.size.width  - self.contentInset.left - self.contentInset.right,
 									self.bounds.size.height - self.contentInset.top - self.contentInset.bottom);
-		frame.size = CGSizeMake(topLeft.width + botRight.width + MMSpreadsheetViewGridSpace, topLeft.height + botRight.height + MMSpreadsheetViewGridSpace);
+		frame.size = self.bounds.size; // CGSizeMake(topLeft.width + botRight.width + MMSpreadsheetViewGridSpace, topLeft.height + botRight.height + MMSpreadsheetViewGridSpace);
+
+		if(self.navigationController.hidesBarsOnSwipe) hidesBarsOnSwipe = YES;
+		if(self.navigationController.navigationBar.isHidden) {
+			// Hysteresis - so its not showing/hiding all the time
+			self.navigationController.hidesBarsOnSwipe = _lowerRightCollectionView.contentOffset.y > 3 ? NO : hidesBarsOnSwipe;
+			[_refreshControl setHidden:YES];
+		} else {
+			[_refreshControl setHidden:NO];
+		}
 		break;
 	}
-
 	frame.origin = origin;
 	_containerView.frame = frame;
 
 	self.contentOffset = origin;
 	if(adjustWidth) {
-		contentSize.width += topLeft.width;	// adjust for cheating on the view size
+		contentSize.width += topLeft.width;		// adjust for cheating on the view size
 	}
 	if(adjustHeight) {
 		contentSize.height += topLeft.height;	// adjust for cheating on the view size
@@ -165,12 +171,11 @@ NSLog(@"setShadowScrollView %d", (int)shadowScrollView.tag);
 
 - (void)adjustSubviewsForScroll {
 	CGRect frame = _containerView.frame;
-NSLog(@"adjustSubviewsForScroll");
+	// NSLog(@"adjustSubviewsForScroll");
 
 	CGPoint contentOffset = self.contentOffset;
-	CGPoint maxOffset = maxContentOffset(self.shadowScrollView);
-
-//NSLog(@"CS %@ CO %@ MAX %@", NSStringFromCGSize(self.contentSize), NSStringFromCGPoint(contentOffset), NSStringFromCGPoint(maxOffset));
+	CGPoint maxOffset = maxContentOffset(self.shadowScrollView, self.shadowScrollView.contentInset);
+	//NSLog(@"CS %@ CO %@ MAX %@", NSStringFromCGSize(self.contentSize), NSStringFromCGPoint(contentOffset), NSStringFromCGPoint(maxOffset));
 
 	BOOL adjustCols = NO;
 	BOOL adjustRows = NO;
@@ -188,14 +193,12 @@ NSLog(@"adjustSubviewsForScroll");
 		adjustCols = YES;
 		adjustRows = YES;
 		break;
-
 	default:
 		assert(!"Impossible");
 	}
 
 	if(adjustCols) {
 		for(UICollectionView *cv in _collectionColViews) {
-			//if(cv.tag == 2) NSLog(@"cv[%d] = START %@", (int)cv.tag, NSStringFromCGPoint(cv.contentOffset));
 			CGPoint currentOffset = cv.contentOffset;
 			CGPoint newContentOffset;
 			if(contentOffset.x >= 0 && contentOffset.x <= maxOffset.x) {
@@ -211,9 +214,11 @@ NSLog(@"adjustSubviewsForScroll");
 			} else
 			if(contentOffset.x > maxOffset.x) {
 				newContentOffset = CGPointMake(maxOffset.x, currentOffset.y);
+			} else {
+				newContentOffset = CGPointZero;
+				assert("Mathematically impossible!");
 			}
 			cv.contentOffset = newContentOffset;
-			//if(cv.tag == 2) NSLog(@"cv[%d] = END %@", (int)cv.tag, NSStringFromCGPoint(cv.contentOffset));
 		}
 	}
 	if(adjustRows) {
@@ -233,11 +238,14 @@ NSLog(@"adjustSubviewsForScroll");
 			} else
 			if(contentOffset.y > maxOffset.y) {
 				newContentOffset = CGPointMake(currentOffset.x, maxOffset.y);
+			} else {
+				newContentOffset = CGPointZero;
+				assert("Mathematically impossible!");
 			}
 			cv.contentOffset = newContentOffset;
 		}
 	}
-//NSLog(@"-CS %@ CO %@ MAX %@", NSStringFromCGSize(self.contentSize), NSStringFromCGPoint(contentOffset), NSStringFromCGPoint(maxOffset));
+	//NSLog(@"-CS %@ CO %@ MAX %@", NSStringFromCGSize(self.contentSize), NSStringFromCGPoint(contentOffset), NSStringFromCGPoint(maxOffset));
 }
 
 #pragma mark - MMSpreadsheetView designated initializer
@@ -254,94 +262,82 @@ NSLog(@"adjustSubviewsForScroll");
 	self.scrollIndicatorInsets = UIEdgeInsetsZero;
 	self.showsVerticalScrollIndicator = YES;
 	self.showsHorizontalScrollIndicator = YES;
+	self.tag = MMSpreadsheetViewCollectionBase;
 	_headerRowCount = headerRowCount;
 	_headerColumnCount = headerColumnCount;
 
 	self.delegate = self;
 	self.contentSize = CGSizeMake(self.bounds.size.width, self.bounds.size.height);
 	self.scrollEnabled = YES;
-	self.tag = MMSpreadsheetViewCollectionBase;
 
-//	if(_wantRefreshControl) {
-//		// 88 is the height of a standard UIRefreshControl. The left/right offsets are to hide the layer border (see initWithFrame)
-//		self.refreshControl = [[MMRefreshControl alloc] initWithFrame:CGRectMake(-1, -88, self.bounds.size.width+2, 88)];
-//		_refreshControl.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-//		[self addSubview:_refreshControl];
-//	}
-
-	if (headerColumnCount == 0 && headerRowCount == 0) {
+	if(headerColumnCount == 0 && headerRowCount == 0) {
 		_spreadsheetHeaderConfiguration = MMSpreadsheetHeaderConfigurationNone;
 	}
-	else if (headerColumnCount > 0 && headerRowCount == 0) {
+	else if(headerColumnCount > 0 && headerRowCount == 0) {
 		_spreadsheetHeaderConfiguration = MMSpreadsheetHeaderConfigurationColumnOnly;
 	}
-	else if (headerColumnCount == 0 && headerRowCount > 0) {
+	else if(headerColumnCount == 0 && headerRowCount > 0) {
 		_spreadsheetHeaderConfiguration = MMSpreadsheetHeaderConfigurationRowOnly;
 	}
-	else if (headerColumnCount > 0 && headerRowCount > 0) {
+	else if(headerColumnCount > 0 && headerRowCount > 0) {
 		_spreadsheetHeaderConfiguration = MMSpreadsheetHeaderConfigurationBoth;
 	}
 	self.backgroundColor = [UIColor grayColor];
 
 	[self setupSubviews];
 
-//   sets proper inset for translucent tab bar if scrolling underneath it
-//	[self hideTabBar:NO withAnimationDuration: 0 coordinator: nil];
+	if(_wantRefreshControl) {
+		// 88 is the height of a standard UIRefreshControl. The left/right offsets are to hide the layer border (see initWithFrame)
+		self.refreshControl = [[MMRefreshControl alloc] initWithFrame:CGRectMake(-1, -88, _containerView.bounds.size.width+2, 88)];
+		_refreshControl.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+		[_containerView insertSubview:_refreshControl atIndex:0];
+	}
 }
 
 - (void)correctContentOffset:(BOOL)wasAtMax {
-	CGFloat maxLeftOffset = [self maxOffset:_lowerLeftCollectionView withInset:_lowerLeftCollectionView.contentInset];
-	CGFloat maxRightOffset = [self maxOffset:_lowerRightCollectionView withInset:_lowerRightCollectionView.contentInset];
+	CGFloat maxRightOffset = maxContentOffset(_lowerRightCollectionView, _lowerRightCollectionView.contentInset).y;
 	CGPoint contentOffsetLeft = _lowerLeftCollectionView.contentOffset;
 	CGPoint contentOffsetRight = _lowerRightCollectionView.contentOffset;
-	if(contentOffsetLeft.y > maxLeftOffset || wasAtMax) {
-		contentOffsetLeft.y = maxLeftOffset;
-		_lowerLeftCollectionView.contentOffset = contentOffsetLeft;
-	}
 	if(contentOffsetRight.y > maxRightOffset || wasAtMax) {
+		contentOffsetLeft.y = maxRightOffset;
+		_lowerLeftCollectionView.contentOffset = contentOffsetLeft;
+
 		contentOffsetRight.y = maxRightOffset;
 		_lowerRightCollectionView.contentOffset = contentOffsetRight;
 	}
 }
+
+#pragma mark - Public Functions
 
 - (void)hideTabBar:(BOOL)hide withAnimationDuration:(CGFloat)animateDuration coordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
 	UITabBarController *tabBarController = _navigationController.tabBarController;
 	UITabBar *tabBar = tabBarController.tabBar;
 	if(tabBar.translucent) {
 		CGFloat offset = hide ? 0 : tabBar.frame.size.height;
-
-		UIEdgeInsets loadingInsetLeft = _lowerLeftCollectionView.contentInset; // lowerLeftCollectionView.contentInset
 		UIEdgeInsets loadingInsetRight = _lowerRightCollectionView.contentInset;
-
-		CGPoint contentOffsetLeft = _lowerLeftCollectionView.contentOffset;
 		CGPoint contentOffsetRight = _lowerRightCollectionView.contentOffset;
-
-		BOOL lowerLeftAtMax = fabs(contentOffsetLeft.y - [self maxOffset:_lowerLeftCollectionView withInset:loadingInsetLeft]) < 3; // possible rounding so make it close
-		BOOL lowerRightAtMax = fabs(contentOffsetRight.y - [self maxOffset:_lowerRightCollectionView withInset:loadingInsetRight]) < 3;
-
-		loadingInsetLeft.bottom = offset;
+		BOOL lowerRightAtMax = fabs(contentOffsetRight.y - maxContentOffset(_lowerRightCollectionView, loadingInsetRight).y) < 3;
 		loadingInsetRight.bottom = offset;
 
 		if(!coordinator) {
-			CGFloat maxLeftOffset = [self maxOffset:_lowerLeftCollectionView withInset:loadingInsetLeft];
-			CGFloat maxRightOffset = [self maxOffset:_lowerRightCollectionView withInset:loadingInsetRight];
-
+			CGFloat maxRightOffset = maxContentOffset(_lowerRightCollectionView, loadingInsetRight).y;
 			if(hide) {
-				contentOffsetLeft.y = MIN(contentOffsetLeft.y, maxLeftOffset);
 				contentOffsetRight.y = MIN(contentOffsetRight.y, maxRightOffset);
 			} else {
-				if(lowerLeftAtMax) contentOffsetLeft.y = maxLeftOffset;
 				if(lowerRightAtMax) contentOffsetRight.y = maxRightOffset;
 			}
 		}
 		dispatch_block_t code = ^{
-			self.lowerLeftCollectionView.contentInset = loadingInsetLeft;
+			self.lowerLeftCollectionView.contentInset = loadingInsetRight;
 			self.lowerRightCollectionView.contentInset = loadingInsetRight;
-			self.lowerLeftCollectionView.contentOffset = contentOffsetLeft;
+			self.lowerLeftCollectionView.contentOffset = contentOffsetRight;
 			self.lowerRightCollectionView.contentOffset = contentOffsetRight;
-			self.contentInset = loadingInsetLeft;
+			self.contentInset = loadingInsetRight;
 			self.contentOffset = contentOffsetRight;
-			self.scrollIndicatorInsets = loadingInsetLeft;
+			self.scrollIndicatorInsets = loadingInsetRight;
+
+			[self setNeedsLayout];
+			[self setNeedsDisplay];
 		};
 
 		if(animateDuration > 0 || coordinator) {
@@ -361,6 +357,7 @@ NSLog(@"adjustSubviewsForScroll");
 					tabFrame.origin.y -= tabFrame.size.height;
 				}
 				tabBar.frame = tabFrame;
+				[self correctContentOffset:lowerRightAtMax];
 			};
 			void (^completionBlock)(BOOL) = ^void(BOOL finished) {
 				if(hide) {
@@ -369,7 +366,8 @@ NSLog(@"adjustSubviewsForScroll");
 					tabBar.frame = r;
 					[tabBar setHidden:YES];
 				}
-				[self correctContentOffset:lowerLeftAtMax];
+				[self setNeedsLayout];
+				[self setNeedsDisplay];
 			};
 
 			if(coordinator) {
@@ -390,17 +388,6 @@ NSLog(@"adjustSubviewsForScroll");
 		self.scrollIndicatorInsets = insets;
 	}
 }
-
-- (CGFloat)maxOffset:(UIScrollView *)scrollView withInset:(UIEdgeInsets)insets {
-	CGFloat h1 = scrollView.contentSize.height;
-	CGFloat h2 = scrollView.bounds.size.height;
-	CGFloat maxOffset = h1 - h2 + insets.top + insets.bottom;
-	//NSLog(@"MAX-OFFSET: h1=%d h2=%d top=%d bot=%d ====> %d", (int)h1, (int)h2, (int)insets.top, (int)insets.bottom, (int)maxOffset);
-	if(maxOffset < 0) maxOffset = 0;
-	return maxOffset;
-}
-
-#pragma mark - Public Functions
 
 - (UICollectionViewCell *)dequeueReusableCellWithReuseIdentifier:identifier forIndexPath:(NSIndexPath *)indexPath {
 	NSIndexPath *collectionViewIndexPath = [self collectionViewIndexPathFromDataSourceIndexPath:indexPath];
@@ -442,7 +429,7 @@ NSLog(@"adjustSubviewsForScroll");
 	_containerView.autoresizingMask = UIViewAutoresizingNone;
 	[self addSubview:_containerView];
 
-	switch (_spreadsheetHeaderConfiguration) {
+	switch(_spreadsheetHeaderConfiguration) {
 	case MMSpreadsheetHeaderConfigurationNone:
 		[self setupLowerRightView];
 		self.collectionViews = @[_lowerRightCollectionView];
@@ -484,7 +471,7 @@ NSLog(@"adjustSubviewsForScroll");
 }
 
 - (void)setupCollectionView:(UICollectionView *)collectionView tag:(NSInteger)tag {
-	collectionView.autoresizingMask = UIViewAutoresizingNone; //		UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+	collectionView.autoresizingMask = UIViewAutoresizingNone;
 	collectionView.backgroundColor = [UIColor clearColor];
 	collectionView.tag = tag;
 	collectionView.delegate = self;
@@ -523,18 +510,15 @@ NSLog(@"adjustSubviewsForScroll");
 
 - (void)layoutSubviews {
 	if(self.shadowScrollView) return;	// scrolling
-
 	[super layoutSubviews];
-NSLog(@"LAYOUT!");
 
 	NSIndexPath *indexPathZero = [NSIndexPath indexPathForItem:0 inSection:0];
 
 	CGRect bounds = self.bounds;
 	CGSize boundsSize = bounds.size;
 	boundsSize.height -= self.contentInset.top + self.contentInset.bottom;
-	// NSLog(@"INSET %d", (int)self.contentInset.bottom);
 
-	switch (_spreadsheetHeaderConfiguration) {
+	switch(_spreadsheetHeaderConfiguration) {
 	case MMSpreadsheetHeaderConfigurationNone:
 		_containerView.frame = self.bounds;
 		break;
@@ -545,7 +529,7 @@ NSLog(@"LAYOUT!");
 										layout:_lowerRightCollectionView.collectionViewLayout
 						sizeForItemAtIndexPath:indexPathZero];
 		CGFloat maxLockDistance = boundsSize.width - cellSize.width;
-		if (size.width > maxLockDistance) {
+		if(size.width > maxLockDistance) {
 			NSAssert(NO, @"Width of header too large! Reduce the number of header columns.");
 		}
 // TODO: fix me
@@ -565,7 +549,7 @@ NSLog(@"LAYOUT!");
 										layout:_lowerRightCollectionView.collectionViewLayout
 						sizeForItemAtIndexPath:indexPathZero];
 		CGFloat maxLockDistance = boundsSize.height - cellSize.height;
-		if (size.height > maxLockDistance) {
+		if(size.height > maxLockDistance) {
 			NSAssert(NO, @"Height of header too large! Reduce the number of header rows.");
 		}
 // TODO: fix me
@@ -616,36 +600,30 @@ NSLog(@"LAYOUT!");
 		NSAssert(NO, @"What have you done?");
 		break;
 	}
-//	for(UICollectionView *cv in _collectionViews) {
-//		NSLog(@"CV tag=%d frame=%@", (int)cv.tag, NSStringFromCGRect(cv.frame));
-//	}
 }
 
 // Idea came from the WWDC 2014 ScrollView presentation by Eliza
 - (UIView *)hitTest:(CGPoint)pt withEvent:(UIEvent *)event {
+//	Interesting Idea, but it just won't work in my case
+//	if(CGRectContainsPoint(_upperLeftCollectionView.frame, pt)) {
+//		self.navigationController.hidesBarsOnTap = YES;
+//		dispatch_async(dispatch_get_main_queue(), ^
+//			{
+//				[self setNeedsLayout];
+//				[self setNeedsDisplay];
+//			});
+//	} else {
+//		self.navigationController.hidesBarsOnTap = NO;
+//	}
+
 	UIView *v = [super hitTest:pt withEvent:event];
-
-	//BOOL oldTag = __shadowScrollView.tag;
-
 	for(UIScrollView *cv in _collectionViews) {
 		CGRect frame = [cv convertRect:cv.bounds toView:self];
-		// NSLog(@"TEST PT=%@ in %@", NSStringFromCGPoint(pt), NSStringFromCGRect(frame));
 		if(CGRectContainsPoint(frame, pt)) {
 			self.shadowScrollView = cv;
 			break;
 		}
 	}
-	if(!self.shadowScrollView) {
-		CGPoint windowPoint = [self convertPoint:pt toView:self.window];
-		CGRect statusFrame = [UIApplication sharedApplication].statusBarFrame;
-		NSLog(@"HAH - PT=%@ frame=%@", NSStringFromCGPoint(windowPoint), NSStringFromCGRect(statusFrame) );
-		if(CGRectContainsPoint(statusFrame, windowPoint)) {
-			NSLog(@"Status TAP!");
-		}
-	}
-
-	//if(__shadowScrollView.tag != oldTag) NSLog(@"Shadow Tag is %d", (int)__shadowScrollView.tag);
-
 	return v;
 }
 
@@ -675,7 +653,7 @@ NSLog(@"LAYOUT!");
 
 - (UICollectionView *)collectionViewForDataSourceIndexPath:(NSIndexPath *)indexPath {
 	UICollectionView *collectionView = nil;
-	switch (_spreadsheetHeaderConfiguration) {
+	switch(_spreadsheetHeaderConfiguration) {
 	case MMSpreadsheetHeaderConfigurationNone:
 		collectionView = _lowerRightCollectionView;
 		break;
@@ -689,7 +667,7 @@ NSLog(@"LAYOUT!");
 		break;
 		
 	case MMSpreadsheetHeaderConfigurationBoth:
-		if (indexPath.mmSpreadsheetRow >= _headerRowCount) {
+		if(indexPath.mmSpreadsheetRow >= _headerRowCount) {
 			collectionView = indexPath.mmSpreadsheetColumn >= _headerColumnCount ? _lowerRightCollectionView : _lowerLeftCollectionView;
 		} else {
 			collectionView = indexPath.mmSpreadsheetColumn >= _headerColumnCount ? _upperRightCollectionView : _upperLeftCollectionView;
@@ -707,8 +685,8 @@ NSLog(@"LAYOUT!");
 	NSInteger mmSpreadsheetRow = indexPath.mmSpreadsheetRow;
 	NSInteger mmSpreadsheetColumn = indexPath.mmSpreadsheetColumn;
 
-	if (collectionView != nil) {
-		switch (collectionView.tag) {
+	if(collectionView) {
+		switch(collectionView.tag) {
 		case MMSpreadsheetViewCollectionUpperLeft:
 			break;
 			
@@ -740,7 +718,7 @@ NSLog(@"LAYOUT!");
 	NSInteger mmSpreadsheetRow = indexPath.mmSpreadsheetRow;
 	NSInteger mmSpreadsheetColumn = indexPath.mmSpreadsheetColumn;
 	
-	switch (collectionView.tag) {
+	switch(collectionView.tag) {
 	case MMSpreadsheetViewCollectionUpperLeft:
 		break;
 		
@@ -778,7 +756,7 @@ NSLog(@"LAYOUT!");
 	NSInteger rowCount = [_dataSource numberOfRowsInSpreadsheetView:self];
 	NSInteger adjustedRows = 1;
 	
-	switch (collectionView.tag) {
+	switch(collectionView.tag) {
 	case MMSpreadsheetViewCollectionUpperLeft:
 	case MMSpreadsheetViewCollectionUpperRight:
 		adjustedRows = _headerRowCount;
@@ -801,7 +779,7 @@ NSLog(@"LAYOUT!");
 	NSInteger rowCount = [_dataSource numberOfRowsInSpreadsheetView:self];
 
 	NSInteger items = 0;
-	switch (collectionView.tag) {
+	switch(collectionView.tag) {
 	case MMSpreadsheetViewCollectionUpperLeft:
 		items = _headerColumnCount;
 		break;
@@ -843,8 +821,8 @@ NSLog(@"LAYOUT!");
 #pragma mark - UICollectionViewDelegate
 
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
-	if (_selectedItemCollectionView != nil) {
-		if (collectionView == _selectedItemCollectionView) {
+	if(_selectedItemCollectionView != nil) {
+		if(collectionView == _selectedItemCollectionView) {
 			_selectedItemIndexPath = indexPath;
 		} else {
 			[_selectedItemCollectionView deselectItemAtIndexPath:_selectedItemIndexPath animated:NO];
@@ -857,14 +835,14 @@ NSLog(@"LAYOUT!");
 	}
 
 	NSIndexPath *dataSourceIndexPath = [self dataSourceIndexPathFromCollectionView:collectionView indexPath:indexPath];
-	if ([_spreadsheetDelegate respondsToSelector:@selector(spreadsheetView:didSelectItemAtIndexPath:)]) {
+	if([_spreadsheetDelegate respondsToSelector:@selector(spreadsheetView:didSelectItemAtIndexPath:)]) {
 		[_spreadsheetDelegate spreadsheetView:self didSelectItemAtIndexPath:dataSourceIndexPath];
 	}
 }
 
 - (BOOL)collectionView:(UICollectionView *)collectionView shouldShowMenuForItemAtIndexPath:(NSIndexPath *)indexPath {
 	NSIndexPath *dataSourceIndexPath = [self dataSourceIndexPathFromCollectionView:collectionView indexPath:indexPath];
-	if ([_spreadsheetDelegate respondsToSelector:@selector(spreadsheetView:shouldShowMenuForItemAtIndexPath:)]) {
+	if([_spreadsheetDelegate respondsToSelector:@selector(spreadsheetView:shouldShowMenuForItemAtIndexPath:)]) {
 		return [_spreadsheetDelegate spreadsheetView:self shouldShowMenuForItemAtIndexPath:dataSourceIndexPath];
 	}
 	return NO;
@@ -872,7 +850,7 @@ NSLog(@"LAYOUT!");
 
 - (BOOL)collectionView:(UICollectionView *)collectionView canPerformAction:(SEL)action forItemAtIndexPath:(NSIndexPath *)indexPath withSender:(id)sender {
 	NSIndexPath *dataSourceIndexPath = [self dataSourceIndexPathFromCollectionView:collectionView indexPath:indexPath];
-	if ([_spreadsheetDelegate respondsToSelector:@selector(spreadsheetView:canPerformAction:forItemAtIndexPath:withSender:)]) {
+	if([_spreadsheetDelegate respondsToSelector:@selector(spreadsheetView:canPerformAction:forItemAtIndexPath:withSender:)]) {
 		return [_spreadsheetDelegate spreadsheetView:self canPerformAction:action forItemAtIndexPath:dataSourceIndexPath withSender:sender];
 	}
 	return NO;
@@ -880,7 +858,7 @@ NSLog(@"LAYOUT!");
 
 - (void)collectionView:(UICollectionView *)collectionView performAction:(SEL)action forItemAtIndexPath:(NSIndexPath *)indexPath withSender:(id)sender {
 	NSIndexPath *dataSourceIndexPath = [self dataSourceIndexPathFromCollectionView:collectionView indexPath:indexPath];
-	if ([_spreadsheetDelegate respondsToSelector:@selector(spreadsheetView:performAction:forItemAtIndexPath:withSender:)]) {
+	if([_spreadsheetDelegate respondsToSelector:@selector(spreadsheetView:performAction:forItemAtIndexPath:withSender:)]) {
 		return [_spreadsheetDelegate spreadsheetView:self performAction:action forItemAtIndexPath:dataSourceIndexPath withSender:sender];
 	}
 }
@@ -889,9 +867,12 @@ NSLog(@"LAYOUT!");
 
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
-NSLog(@"scrollViewDidScroll: tag=%d ", (int)self.shadowScrollView.tag);
+	// NSLog(@"scrollViewDidScroll: tag=%d %@", (int)self.shadowScrollView.tag, NSStringFromCGPoint(scrollView.contentOffset));
 	if(scrollView != self || self.shadowScrollView == nil) return;
 
+	if(_wantRefreshControl && !_navigationController.navigationBar.isHidden) {
+		[self checkRefreshControlWithOpen:NO];
+	}
 	[self adjustSubviewsForScroll];
 }
 
@@ -901,16 +882,12 @@ NSLog(@"scrollViewDidScroll: tag=%d ", (int)self.shadowScrollView.tag);
 }
 
 - (void)scrollViewWillEndDragging:(UIScrollView *)scrollView withVelocity:(CGPoint)velocity targetContentOffset:(inout CGPoint *)targetContentOffset {
-	// Block UI if we're in a bounce.
-	// Without this, you can lock the scroll views in a scroll which looks weird.
-
-	NSLog(@"scrollViewWillEndDragging");
+	// NSLog(@"%@scrollViewDidEndDragging : withVelocity", _isScrolling ? @"" : @"-");
 
 	CGPoint toffset = *targetContentOffset;
 	if(_snapToGrid) {
 		*targetContentOffset = [self alignOffset:toffset collectionView:(UICollectionView *)self.shadowScrollView];
 	}
-	// NSLog(@"%@scrollViewDidEndDragging : withVelocity", _isScrolling ? @"" : @"-");
 }
 
 - (CGPoint)alignOffset:(CGPoint)pt collectionView:(UICollectionView *)collectionView {
@@ -925,35 +902,62 @@ NSLog(@"scrollViewDidScroll: tag=%d ", (int)self.shadowScrollView.tag);
 
 - (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate
 {
-//	if(_wantRefreshControl) {
-//		[self checkRefreshControlWithOpen:YES];
-//	}
-NSLog(@"scrollViewDidEndDragging");
-
-	if(!decelerate) {
-		[self scrollViewDidStop:scrollView];
-	}
 	//NSLog(@"%@scrollViewDidEndDragging : willDecelerate", _isScrolling ? @"" : @"-");
+	if(_wantRefreshControl && !_navigationController.navigationBar.isHidden) {
+		[self checkRefreshControlWithOpen:YES];
+	}
+	if(!decelerate) {
+		[self scrollViewDidStop];
+	}
+}
+
+- (void)checkRefreshControlWithOpen:(BOOL)andOpen {
+	CGRect r = _refreshControl.frame;
+	r.origin.y = (-self.contentOffset.y) - r.size.height;
+	if(andOpen && !_openingRefreshControl && (r.origin.y > -r.size.height/2)) {
+		startValue = r.origin.y;
+		ratio = r.size.height/(startValue + r.size.height);
+
+		_openingRefreshControl = YES;
+
+		if([_spreadsheetDelegate respondsToSelector:@selector(refreshControlActive:)]) {
+			dispatch_async(dispatch_get_main_queue(), ^
+				{
+					[self.refreshControl startRefresh];
+					[self.spreadsheetDelegate refreshControlActive:_refreshControl];
+				});
+		}
+	}
+	if(_openingRefreshControl) {
+		CGRect rr = _containerView.bounds;
+		CGFloat diff =  r.origin.y - startValue;
+		rr.origin.y = (CGFloat)round(diff*ratio);
+		_containerView.bounds = rr;
+	}
 }
 
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
 	if(scrollView != self) return;
+	//NSLog(@"scrollViewDidEndDecelerating");
 
-NSLog(@"scrollViewDidEndDecelerating");
-	[self scrollViewDidStop:scrollView];
+	[self scrollViewDidStop];
 }
 
 // Helper function, not a delegate
-- (void)scrollViewDidStop:(UIScrollView *)scrollView {
-	if(!_isScrolling) return;
-	if(scrollView != self) return;
+- (void)scrollViewDidStop {
+	if(!_isScrolling) {
+		return;
+	}
 
-NSLog(@"scrollViewDidStop");
+//	NSLog(@"scrollViewDidStop: isDecel=%d isDragging=%d isTracking=%d", (int)self.isDecelerating, (int)self.isDragging, (int)self.isTracking);
+//	dispatch_async(dispatch_get_main_queue(), ^
+//	{
+//		NSLog(@"SCROLLVIEW DID STOP: isDecel=%d isDragging=%d isTracking=%d", (int)self.isDecelerating, (int)self.isDragging, (int)self.isTracking);
+//
+//	});
 
 	// The problem with isTracking is that dragging the view around then letting up will still register isTracking (Apple bug?)
-	if (!scrollView.isDecelerating && !scrollView.isDragging/* && !scrollView.isTracking*/) {
-//		[self setNeedsLayout];
-
+	if(!self.isDecelerating && !self.isDragging/* && !self.isTracking*/) {
 		self.shadowScrollView = nil;
 		_isScrolling = NO;
 
@@ -963,27 +967,20 @@ NSLog(@"scrollViewDidStop");
 	}
 }
 
-- (BOOL)scrollViewShouldScrollToTop:(UIScrollView *)scrollView {
-	NSLog(@"SHOULD!");
-	return YES;
-}
-
 - (void)scrollViewDidScrollToTop:(UIScrollView *)scrollView
 {
 	if(scrollView != self) return;
+	// NSLog(@"scrollViewDidScrollToTop");
 
-NSLog(@"scrollViewDidScrollToTop");
-
-	[self scrollViewDidStop:scrollView];
+	[self scrollViewDidStop];
 }
 
 - (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView
 {
 	if(scrollView != self) return;
+	// NSLog(@"scrollViewDidEndScrollingAnimation");
 
-
-NSLog(@"scrollViewDidEndScrollingAnimation");
-	[self scrollViewDidStop:scrollView];
+	[self scrollViewDidStop];
 }
 
 @end
@@ -1004,9 +1001,10 @@ NSLog(@"scrollViewDidEndScrollingAnimation");
 		_indicator.translatesAutoresizingMaskIntoConstraints = NO;
 		[self addSubview:_indicator];
 		// TODO: NSLayoutAnchor
-		c = [NSLayoutConstraint constraintWithItem:self attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:_indicator attribute:NSLayoutAttributeCenterX multiplier:1 constant:0];
+
+		c = [self.centerXAnchor constraintEqualToAnchor:_indicator.centerXAnchor];
 		[self addConstraint:c];
-		c = [NSLayoutConstraint constraintWithItem:self attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:_indicator attribute:NSLayoutAttributeCenterY multiplier:1 constant:0];
+		c = [self.centerYAnchor constraintEqualToAnchor:_indicator.centerYAnchor];
 		[self addConstraint:c];
 
 		_indicator.color = [UIColor blackColor];
@@ -1018,9 +1016,9 @@ NSLog(@"scrollViewDidEndScrollingAnimation");
 		_textLabel.font = [UIFont boldSystemFontOfSize:17];
 		[self addSubview:_textLabel];
 
-		c = [NSLayoutConstraint constraintWithItem:self attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:_textLabel attribute:NSLayoutAttributeCenterX multiplier:1 constant:0];
+		c = [self.centerXAnchor constraintEqualToAnchor:_textLabel.centerXAnchor];
 		[self addConstraint:c];
-		c = [NSLayoutConstraint constraintWithItem:self attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_textLabel attribute:NSLayoutAttributeBottom multiplier:1 constant:4];
+		c = [self.bottomAnchor constraintEqualToAnchor:_textLabel.bottomAnchor constant:4];
 		[self addConstraint:c];
 		[_textLabel sizeToFit];
 
@@ -1038,21 +1036,20 @@ NSLog(@"scrollViewDidEndScrollingAnimation");
 }
 
 - (void)stopRefresh {
-	MMSpreadsheetView *ssv = (MMSpreadsheetView *)self.superview;
-
+	MMSpreadsheetView *ssv = (MMSpreadsheetView *)self.superview.superview;
 	ssv.openingRefreshControl = NO;
 	[ssv setNeedsLayout];
 
-	CGRect bounds = ssv.bounds;
+	CGRect bounds = ssv.containerView.bounds;
 	bounds.origin.y = 0;
 
 	[UIView animateWithDuration:0.250 animations:^{
-		ssv.bounds = bounds;
+		ssv.containerView.bounds = bounds;
 	} completion:^(BOOL finished)
 	{
+		ssv.shadowScrollView = nil; // resets the container bounds
 		[_indicator stopAnimating];
 	}];
 }
 
 @end
-

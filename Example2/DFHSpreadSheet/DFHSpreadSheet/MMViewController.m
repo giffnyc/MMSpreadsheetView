@@ -50,15 +50,8 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-	self.navigationController.navigationBar.translucent = NO;
-	//self.tabBarController.tabBar.translucent = NO;
-
-	//self.navigationController.hidesBarsWhenVerticallyCompact = YES;
-	self.navigationController.hidesBarsOnSwipe = YES;
-	self.navigationController.hidesBarsOnTap = NO;
-
 	rows = 11;
-	cols = 9;
+	cols = 4; // 9;
 
     self.tableData = [NSMutableArray array];
 
@@ -147,14 +140,21 @@
 
     self.selectedGridCells = [NSMutableSet set];
 
+
+
+	self.navigationController.navigationBar.translucent = NO;
+	self.navigationController.hidesBarsWhenVerticallyCompact = NO;
+	self.navigationController.hidesBarsOnSwipe = NO;
+	self.navigationController.hidesBarsOnTap = NO;
+
 	spreadSheetView = (MMSpreadsheetView *)self.view;
 	spreadSheetView.navigationController = self.navigationController;
-	spreadSheetView.wantRefreshControl = NO;
+//spreadSheetView.wantRefreshControl = NO;
 
 	[spreadSheetView commonInitWithNumberOfHeaderRows:NUM_HEADER_ROWS numberOfHeaderColumns:NUM_HEADER_COLS];
 	spreadSheetView.bounces = YES;
-	spreadSheetView.horizontalBounce = NO;
-	spreadSheetView.verticalBounce = YES;
+	spreadSheetView.alwaysBounceHorizontal = YES;
+	spreadSheetView.alwaysBounceVertical = YES;
 	spreadSheetView.directionalLockEnabled = YES;
 	//spreadSheetView.snapToGrid = NO;
 
@@ -166,7 +166,7 @@
     [spreadSheetView registerCellClass:[MMLeftColumnCell class] forCellWithReuseIdentifier:@"LeftColumnCell"];
 
     // Set the delegate & datasource for the spreadsheet view.
-    spreadSheetView.delegate = self;
+    spreadSheetView.spreadsheetDelegate = self;
     spreadSheetView.dataSource = self;
 
 //[NSTimer scheduledTimerWithTimeInterval:2 target:self selector:@selector(timer:) userInfo:nil repeats:YES];
@@ -235,12 +235,12 @@
 
 */
 
-- (void)refreshControlActive:(MMRefreshControl *)control {
-	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2000 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^
-	{
-		[control stopRefresh];
-	});
-}
+//- (void)refreshControlActive:(MMRefreshControl *)control {
+//	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2000 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^
+//	{
+//		[control stopRefresh];
+//	});
+//}
 
 #pragma mark - MMSpreadsheetViewDataSource
 

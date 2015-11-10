@@ -25,54 +25,55 @@
 #import "NSIndexPath+MMSpreadsheetView.h"
 
 typedef NS_ENUM(NSInteger, MMSpreadsheetViewCollection) {
-	MMSpreadsheetViewCollectionUpperLeft = 1,
+	MMSpreadsheetViewCollectionUpperLeft=1,
 	MMSpreadsheetViewCollectionUpperRight,
 	MMSpreadsheetViewCollectionLowerLeft,
 	MMSpreadsheetViewCollectionLowerRight,
-	MMSpreadsheetViewCollectionOverLay,
+	MMSpreadsheetViewCollectionBase
 };
 
 typedef NS_ENUM(NSInteger, MMSpreadsheetHeaderConfiguration) {
 	MMSpreadsheetHeaderConfigurationNone = 0,
 	MMSpreadsheetHeaderConfigurationColumnOnly,
 	MMSpreadsheetHeaderConfigurationRowOnly,
-	MMSpreadsheetHeaderConfigurationBoth,
+	MMSpreadsheetHeaderConfigurationBoth
 };
 
 const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 
-@interface MMScrollView : UIScrollView
-@property (nonatomic, strong, readwrite) UIScrollView *shadowScrollView;
-@end
-
-@interface MMSpreadsheetView () <UICollectionViewDataSource, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout, UIGestureRecognizerDelegate>
+@interface MMSpreadsheetView () <UICollectionViewDataSource, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout>	// UIGestureRecognizerDelegate
 
 @property (nonatomic, assign) NSUInteger headerRowCount;
 @property (nonatomic, assign) NSUInteger headerColumnCount;
 @property (nonatomic, assign) MMSpreadsheetHeaderConfiguration spreadsheetHeaderConfiguration;
 @property (nonatomic, strong) UIScrollView *controllingScrollView;
-@property (nonatomic, strong) MMScrollView *overlayScrollView;
+@property (nonatomic, strong, readwrite) UIScrollView *shadowScrollView;
 
-@property (nonatomic, strong) UIView *upperLeftContainerView;
-@property (nonatomic, strong) UIView *upperRightContainerView;
-@property (nonatomic, strong) UIView *lowerLeftContainerView;
-@property (nonatomic, strong) UIView *lowerRightContainerView;
+@property (nonatomic, strong) UIView *containerView;	// size of top/left, and the full contentSize of the lower right
 
 @property (nonatomic, strong) UICollectionView *upperLeftCollectionView;
 @property (nonatomic, strong) UICollectionView *upperRightCollectionView;
 @property (nonatomic, strong) UICollectionView *lowerLeftCollectionView;
 @property (nonatomic, strong) UICollectionView *lowerRightCollectionView;
 @property (nonatomic, strong) NSArray<UICollectionView *> *collectionViews;
-
-//@property (nonatomic, assign, getter = isUpperRightBouncing) BOOL upperRightBouncing;
-//@property (nonatomic, assign, getter = isLowerLeftBouncing) BOOL lowerLeftBouncing;
-//@property (nonatomic, assign, getter = isLowerRightBouncing) BOOL lowerRightBouncing;
+@property (nonatomic, strong) NSArray<NSString *> *collectionNames;
+@property (nonatomic, strong) NSArray<UICollectionView *> *collectionColViews;
+@property (nonatomic, strong) NSArray<UICollectionView *> *collectionRowViews;
 
 @property (nonatomic, strong) UICollectionView *selectedItemCollectionView;
 @property (nonatomic, strong) NSIndexPath *selectedItemIndexPath;
 
 @property (nonatomic, assign) BOOL openingRefreshControl;
+
 @end
+
+static CGPoint maxContentOffset(UIScrollView *sv) {
+	CGPoint pt =	CGPointMake(
+						MAX(sv.contentSize.width - sv.bounds.size.width + sv.contentInset.left + sv.contentInset.right, 0),
+						MAX(sv.contentSize.height - sv.bounds.size.height + sv.contentInset.top + sv.contentInset.bottom, 0)
+					);
+	return pt;
+}
 
 
 @implementation MMSpreadsheetView
@@ -80,6 +81,7 @@ const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 	CGFloat ratio;
 	CGFloat startValue;
 }
+@synthesize shadowScrollView=__shadowScrollView;	// Make it harder to use directly with single '_'
 
 - (instancetype)init {
 	return [self initWithNumberOfHeaderRows:0 numberOfHeaderColumns:0 frame:CGRectZero];
@@ -89,6 +91,7 @@ const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 	if((self = [super initWithFrame:frame])) {
 		// Call below in viewDidLoad
 		//[self commonInitWithNumberOfHeaderRows:0 numberOfHeaderColumns:0];
+		self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 	}
 	return self;
 }
@@ -102,41 +105,169 @@ const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 	return self;
 }
 
+
+- (void)setShadowScrollView:(UIScrollView *)shadowScrollView {
+	__shadowScrollView = shadowScrollView;
+
+NSLog(@"setShadowScrollView %d", (int)shadowScrollView.tag);
+
+	CGSize topLeft = _upperLeftCollectionView.bounds.size;
+	CGSize botRight = _lowerRightCollectionView.contentSize;
+	botRight.height += self.contentInset.top + self.contentInset.bottom + MMSpreadsheetViewGridSpace;
+
+	CGRect frame = _containerView.frame;
+	CGSize contentSize = shadowScrollView.contentSize;
+	CGPoint origin = CGPointZero;
+
+	BOOL adjustWidth = NO;
+	BOOL adjustHeight = NO;
+	switch(shadowScrollView.tag) {
+	case MMSpreadsheetViewCollectionUpperLeft:
+		origin = CGPointZero;
+		break;
+	case MMSpreadsheetViewCollectionUpperRight:
+		origin = CGPointMake(shadowScrollView.contentOffset.x, 0);
+		adjustWidth = YES;
+		break;
+	case MMSpreadsheetViewCollectionLowerLeft:
+		origin = CGPointMake(0, shadowScrollView.contentOffset.y);
+		adjustHeight = YES;
+		break;
+
+	case MMSpreadsheetViewCollectionLowerRight:
+		origin = shadowScrollView.contentOffset;
+		adjustWidth = YES;
+		adjustHeight = YES;
+		break;
+
+	case MMSpreadsheetViewCollectionBase:	// this never happens here for completeness
+	default:
+		contentSize = CGSizeMake(	self.bounds.size.width  - self.contentInset.left - self.contentInset.right,
+									self.bounds.size.height - self.contentInset.top - self.contentInset.bottom);
+		frame.size = CGSizeMake(topLeft.width + botRight.width + MMSpreadsheetViewGridSpace, topLeft.height + botRight.height + MMSpreadsheetViewGridSpace);
+		break;
+	}
+
+	frame.origin = origin;
+	_containerView.frame = frame;
+
+	self.contentOffset = origin;
+	if(adjustWidth) {
+		contentSize.width += topLeft.width;	// adjust for cheating on the view size
+	}
+	if(adjustHeight) {
+		contentSize.height += topLeft.height;	// adjust for cheating on the view size
+	}
+	// NSLog(@"SET CS TO %@", NSStringFromCGSize(contentSize));
+	self.contentSize = contentSize;
+}
+
+
+- (void)adjustSubviewsForScroll {
+	CGRect frame = _containerView.frame;
+NSLog(@"adjustSubviewsForScroll");
+
+	CGPoint contentOffset = self.contentOffset;
+	CGPoint maxOffset = maxContentOffset(self.shadowScrollView);
+
+//NSLog(@"CS %@ CO %@ MAX %@", NSStringFromCGSize(self.contentSize), NSStringFromCGPoint(contentOffset), NSStringFromCGPoint(maxOffset));
+
+	BOOL adjustCols = NO;
+	BOOL adjustRows = NO;
+
+	switch(self.shadowScrollView.tag) {
+	case MMSpreadsheetViewCollectionUpperLeft:
+		break;
+	case MMSpreadsheetViewCollectionUpperRight:
+		adjustCols = YES;
+		break;
+	case MMSpreadsheetViewCollectionLowerLeft:
+		adjustRows = YES;
+		break;
+	case MMSpreadsheetViewCollectionLowerRight:
+		adjustCols = YES;
+		adjustRows = YES;
+		break;
+
+	default:
+		assert(!"Impossible");
+	}
+
+	if(adjustCols) {
+		for(UICollectionView *cv in _collectionColViews) {
+			//if(cv.tag == 2) NSLog(@"cv[%d] = START %@", (int)cv.tag, NSStringFromCGPoint(cv.contentOffset));
+			CGPoint currentOffset = cv.contentOffset;
+			CGPoint newContentOffset;
+			if(contentOffset.x >= 0 && contentOffset.x <= maxOffset.x) {
+				newContentOffset = CGPointMake(contentOffset.x, currentOffset.y);
+				if(cv == self.shadowScrollView) {
+					frame.origin = newContentOffset;
+					_containerView.frame = frame;
+				}
+			} else
+			if(contentOffset.x < 0) {
+				currentOffset.x = 0;
+				newContentOffset = currentOffset;
+			} else
+			if(contentOffset.x > maxOffset.x) {
+				newContentOffset = CGPointMake(maxOffset.x, currentOffset.y);
+			}
+			cv.contentOffset = newContentOffset;
+			//if(cv.tag == 2) NSLog(@"cv[%d] = END %@", (int)cv.tag, NSStringFromCGPoint(cv.contentOffset));
+		}
+	}
+	if(adjustRows) {
+		for(UICollectionView *cv in _collectionRowViews) {
+			CGPoint currentOffset = cv.contentOffset;
+			CGPoint newContentOffset;
+			if(contentOffset.y >= 0 && contentOffset.y <= maxOffset.y) {
+				newContentOffset = CGPointMake(currentOffset.x, contentOffset.y);
+				if(cv == self.shadowScrollView) {
+					frame.origin = newContentOffset;
+					_containerView.frame = frame;
+				}
+			} else
+			if(contentOffset.y < 0) {
+				currentOffset.y = 0;
+				newContentOffset = currentOffset;
+			} else
+			if(contentOffset.y > maxOffset.y) {
+				newContentOffset = CGPointMake(currentOffset.x, maxOffset.y);
+			}
+			cv.contentOffset = newContentOffset;
+		}
+	}
+//NSLog(@"-CS %@ CO %@ MAX %@", NSStringFromCGSize(self.contentSize), NSStringFromCGPoint(contentOffset), NSStringFromCGPoint(maxOffset));
+}
+
 #pragma mark - MMSpreadsheetView designated initializer
 
 - (instancetype)initWithNumberOfHeaderRows:(NSUInteger)headerRowCount numberOfHeaderColumns:(NSUInteger)headerColumnCount frame:(CGRect)frame {
 	if((self = [super initWithFrame:frame])) {
 		[self commonInitWithNumberOfHeaderRows:headerRowCount numberOfHeaderColumns:headerColumnCount];
+		self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 	}
 	return self;
 }
 
 - (void)commonInitWithNumberOfHeaderRows:(NSUInteger)headerRowCount numberOfHeaderColumns:(NSUInteger)headerColumnCount {
-	_scrollIndicatorInsets = UIEdgeInsetsZero;
-	_showsVerticalScrollIndicator = YES;
-	_showsHorizontalScrollIndicator = YES;
+	self.scrollIndicatorInsets = UIEdgeInsetsZero;
+	self.showsVerticalScrollIndicator = YES;
+	self.showsHorizontalScrollIndicator = YES;
 	_headerRowCount = headerRowCount;
 	_headerColumnCount = headerColumnCount;
 
-	self.overlayScrollView = [[MMScrollView alloc] initWithFrame:self.bounds];
-	self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-	_overlayScrollView.delegate = self;
-	_overlayScrollView.contentSize = CGSizeMake(self.bounds.size.width, self.bounds.size.height);
-	_overlayScrollView.scrollEnabled = YES;
-	_overlayScrollView.tag = 99;
+	self.delegate = self;
+	self.contentSize = CGSizeMake(self.bounds.size.width, self.bounds.size.height);
+	self.scrollEnabled = YES;
+	self.tag = MMSpreadsheetViewCollectionBase;
 
-	// Defaults, need here because need overlay defined first
-	self.bounces = YES;
-	self.horizontalBounce = YES;
-	self.verticalBounce = YES;
-	self.scrollsToTop = YES;
-
-	if(_wantRefreshControl) {
-		// 88 is the height of a standard UIRefreshControl. The left/right offsets are to hide the layer border (see initWithFrame)
-		self.refreshControl = [[MMRefreshControl alloc] initWithFrame:CGRectMake(-1, -88, self.bounds.size.width+2, 88)];
-		_refreshControl.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-		[self addSubview:_refreshControl];
-	}
+//	if(_wantRefreshControl) {
+//		// 88 is the height of a standard UIRefreshControl. The left/right offsets are to hide the layer border (see initWithFrame)
+//		self.refreshControl = [[MMRefreshControl alloc] initWithFrame:CGRectMake(-1, -88, self.bounds.size.width+2, 88)];
+//		_refreshControl.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+//		[self addSubview:_refreshControl];
+//	}
 
 	if (headerColumnCount == 0 && headerRowCount == 0) {
 		_spreadsheetHeaderConfiguration = MMSpreadsheetHeaderConfigurationNone;
@@ -150,15 +281,12 @@ const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 	else if (headerColumnCount > 0 && headerRowCount > 0) {
 		_spreadsheetHeaderConfiguration = MMSpreadsheetHeaderConfigurationBoth;
 	}
-	self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 	self.backgroundColor = [UIColor grayColor];
 
 	[self setupSubviews];
-	[self addSubview:_overlayScrollView];
 
-	// sets proper inset for translucent tab bar if scrolling underneath it
-	[self hideTabBar:NO withAnimationDuration: 0 coordinator: nil];
-
+//   sets proper inset for translucent tab bar if scrolling underneath it
+//	[self hideTabBar:NO withAnimationDuration: 0 coordinator: nil];
 }
 
 - (void)correctContentOffset:(BOOL)wasAtMax {
@@ -175,7 +303,6 @@ const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 		_lowerRightCollectionView.contentOffset = contentOffsetRight;
 	}
 }
-
 
 - (void)hideTabBar:(BOOL)hide withAnimationDuration:(CGFloat)animateDuration coordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
 	UITabBarController *tabBarController = _navigationController.tabBarController;
@@ -212,9 +339,9 @@ const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 			self.lowerRightCollectionView.contentInset = loadingInsetRight;
 			self.lowerLeftCollectionView.contentOffset = contentOffsetLeft;
 			self.lowerRightCollectionView.contentOffset = contentOffsetRight;
-			self.overlayScrollView.contentInset = loadingInsetLeft;
-			self.overlayScrollView.contentOffset = contentOffsetRight;
-			self.overlayScrollView.scrollIndicatorInsets = loadingInsetLeft;
+			self.contentInset = loadingInsetLeft;
+			self.contentOffset = contentOffsetRight;
+			self.scrollIndicatorInsets = loadingInsetLeft;
 		};
 
 		if(animateDuration > 0 || coordinator) {
@@ -258,7 +385,9 @@ const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 			code();
 			[tabBar setHidden:hide];
 		}
-		_scrollIndicatorInsets.bottom = offset;
+		UIEdgeInsets insets = self.scrollIndicatorInsets;
+		insets.bottom = offset;
+		self.scrollIndicatorInsets = insets;
 	}
 }
 
@@ -303,28 +432,38 @@ const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 }
 
 - (void)flashScrollIndicators {
-	[_overlayScrollView flashScrollIndicators];
+	[self flashScrollIndicators];
 }
 
 #pragma mark - View Setup functions
 
 - (void)setupSubviews {
+	self.containerView = [[UIView alloc] initWithFrame:CGRectZero];
+	_containerView.autoresizingMask = UIViewAutoresizingNone;
+	[self addSubview:_containerView];
+
 	switch (_spreadsheetHeaderConfiguration) {
 	case MMSpreadsheetHeaderConfigurationNone:
 		[self setupLowerRightView];
-		self.collectionViews = @[ _lowerRightCollectionView];
+		self.collectionViews = @[_lowerRightCollectionView];
+		self.collectionRowViews = _collectionViews;
+		self.collectionColViews = _collectionViews;
 		break;
 		
 	case MMSpreadsheetHeaderConfigurationColumnOnly:
 		[self setupLowerLeftView];
 		[self setupLowerRightView];
-		self.collectionViews = @[ _lowerLeftCollectionView, _lowerRightCollectionView];
+		self.collectionViews = @[_lowerLeftCollectionView, _lowerRightCollectionView];
+		self.collectionColViews = @[ _lowerRightCollectionView];
+		self.collectionRowViews = _collectionViews;
 		break;
 		
 	case MMSpreadsheetHeaderConfigurationRowOnly:
 		[self setupUpperRightView];
 		[self setupLowerRightView];
-		self.collectionViews = @[ _upperRightCollectionView, _lowerRightCollectionView];
+		self.collectionViews = @[_upperRightCollectionView, _lowerRightCollectionView];
+		self.collectionColViews = _collectionViews;
+		self.collectionRowViews = @[_lowerRightCollectionView];
 		break;
 		
 	case MMSpreadsheetHeaderConfigurationBoth:
@@ -332,7 +471,10 @@ const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 		[self setupUpperRightView];
 		[self setupLowerLeftView];
 		[self setupLowerRightView];
+		self.collectionNames = @[@"Left Corner", @"Column Labels", @"Row Labels", @"Data Cells"];
 		self.collectionViews = @[ _upperLeftCollectionView, _upperRightCollectionView, _lowerLeftCollectionView, _lowerRightCollectionView];
+		self.collectionColViews = @[_upperRightCollectionView, _lowerRightCollectionView];
+		self.collectionRowViews = @[_lowerLeftCollectionView, _lowerRightCollectionView];
 		break;
 		
 	default:
@@ -341,88 +483,60 @@ const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 	}
 }
 
-- (void)setupContainerSubview:(UIView *)container collectionView:(UICollectionView *)collectionView tag:(NSInteger)tag {
-	container.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-	[self addSubview:container];
-
-	collectionView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+- (void)setupCollectionView:(UICollectionView *)collectionView tag:(NSInteger)tag {
+	collectionView.autoresizingMask = UIViewAutoresizingNone; //		UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 	collectionView.backgroundColor = [UIColor clearColor];
 	collectionView.tag = tag;
 	collectionView.delegate = self;
 	collectionView.dataSource = self;
 	collectionView.showsHorizontalScrollIndicator = NO;
 	collectionView.showsVerticalScrollIndicator = NO;
-
 	collectionView.scrollEnabled = NO;
-	[container addSubview:collectionView];
+	[_containerView addSubview:collectionView];
 }
 
 - (UICollectionView *)setupCollectionViewWithGridLayout {
 	MMGridLayout *layout = [[MMGridLayout alloc] init];
 	UICollectionView *collectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:layout];
-
 	return collectionView;
 }
 
 - (void)setupUpperLeftView {
-	self.upperLeftContainerView = [[UIView alloc] initWithFrame:CGRectZero];
 	self.upperLeftCollectionView = [self setupCollectionViewWithGridLayout];
-	[self setupContainerSubview:_upperLeftContainerView
-				 collectionView:_upperLeftCollectionView
-							tag:MMSpreadsheetViewCollectionUpperLeft];
-	//_upperLeftCollectionView.scrollEnabled = NO;
+	[self setupCollectionView:_upperLeftCollectionView tag:MMSpreadsheetViewCollectionUpperLeft];
 }
 
 - (void)setupUpperRightView {
-	self.upperRightContainerView = [[UIView alloc] initWithFrame:CGRectZero];
 	self.upperRightCollectionView = [self setupCollectionViewWithGridLayout];
-//[_upperRightCollectionView.panGestureRecognizer addTarget:self action:@selector(handleUpperRightPanGesture:)];
-	[self setupContainerSubview:_upperRightContainerView
-				 collectionView:_upperRightCollectionView
-							tag:MMSpreadsheetViewCollectionUpperRight];
-
-	//_upperRightCollectionView.scrollEnabled = NO;
-	//_upperRightCollectionView.alwaysBounceVertical = NO;
+	[self setupCollectionView:_upperRightCollectionView tag:MMSpreadsheetViewCollectionUpperRight];
 }
 
 - (void)setupLowerLeftView {
-	self.lowerLeftContainerView = [[UIView alloc] initWithFrame:CGRectZero];
 	self.lowerLeftCollectionView = [self setupCollectionViewWithGridLayout];
-//[_lowerLeftCollectionView.panGestureRecognizer addTarget:self action:@selector(handleLowerLeftPanGesture:)];
-
-	[self setupContainerSubview:_lowerLeftContainerView
-				 collectionView:_lowerLeftCollectionView
-							tag:MMSpreadsheetViewCollectionLowerLeft];
+	[self setupCollectionView:_lowerLeftCollectionView tag:MMSpreadsheetViewCollectionLowerLeft];
 }
 
 - (void)setupLowerRightView {
-	self.lowerRightContainerView = [[UIView alloc] initWithFrame:CGRectZero];
 	self.lowerRightCollectionView = [self setupCollectionViewWithGridLayout];
-//[_lowerRightCollectionView.panGestureRecognizer addTarget:self action:@selector(handleLowerRightPanGesture:)];
-
-	[self setupContainerSubview:_lowerRightContainerView
-				 collectionView:_lowerRightCollectionView
-							tag:MMSpreadsheetViewCollectionLowerRight];
+	[self setupCollectionView:_lowerRightCollectionView tag:MMSpreadsheetViewCollectionLowerRight];
 }
 
-/*
-	for(UICollectionView *cv in _collectionViews) {
-		[cv registerClass:cellClass forCellWithReuseIdentifier:identifier];
-	}
-
-*/
 - (void)layoutSubviews {
-	if(_openingRefreshControl) return;	// setting bounds for refreshControl
+	if(self.shadowScrollView) return;	// scrolling
+
 	[super layoutSubviews];
+NSLog(@"LAYOUT!");
 
 	NSIndexPath *indexPathZero = [NSIndexPath indexPathForItem:0 inSection:0];
 
 	CGRect bounds = self.bounds;
 	CGSize boundsSize = bounds.size;
+	boundsSize.height -= self.contentInset.top + self.contentInset.bottom;
+	// NSLog(@"INSET %d", (int)self.contentInset.bottom);
 
 	switch (_spreadsheetHeaderConfiguration) {
 	case MMSpreadsheetHeaderConfigurationNone:
-		_lowerRightContainerView.frame = self.bounds;
+		_containerView.frame = self.bounds;
 		break;
 		
 	case MMSpreadsheetHeaderConfigurationColumnOnly: {
@@ -434,14 +548,15 @@ const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 		if (size.width > maxLockDistance) {
 			NSAssert(NO, @"Width of header too large! Reduce the number of header columns.");
 		}
-		_lowerLeftContainerView.frame = CGRectMake(0.0f,
-													   0.0f,
-													   size.width,
-													   boundsSize.height);
-		_lowerRightContainerView.frame = CGRectMake(size.width + MMSpreadsheetViewGridSpace,
-														0.0f,
-														boundsSize.width - size.width - MMSpreadsheetViewGridSpace,
-														boundsSize.height);
+// TODO: fix me
+//		_containerView.frame = CGRectMake(0.0f,
+//													   0.0f,
+//													   size.width,
+//													   boundsSize.height);
+//		_lowerRightContainerView.frame = CGRectMake(size.width + MMSpreadsheetViewGridSpace,
+//														0.0f,
+//														boundsSize.width - size.width - MMSpreadsheetViewGridSpace,
+//														boundsSize.height);
 	}	break;
 
 	case MMSpreadsheetHeaderConfigurationRowOnly: {
@@ -453,140 +568,94 @@ const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 		if (size.height > maxLockDistance) {
 			NSAssert(NO, @"Height of header too large! Reduce the number of header rows.");
 		}
-		_upperRightContainerView.frame = CGRectMake(0.0f,
-														0.0f,
-														boundsSize.width,
-														size.height);
-		_lowerRightContainerView.frame = CGRectMake(0.0f,
-														size.height + MMSpreadsheetViewGridSpace,
-														boundsSize.width,
-														boundsSize.height - size.height - MMSpreadsheetViewGridSpace);
+// TODO: fix me
+//		_upperRightContainerView.frame = CGRectMake(0.0f,
+//														0.0f,
+//														boundsSize.width,
+//														size.height);
+//		_lowerRightContainerView.frame = CGRectMake(0.0f,
+//														size.height + MMSpreadsheetViewGridSpace,
+//														boundsSize.width,
+//														boundsSize.height - size.height - MMSpreadsheetViewGridSpace);
 	}	break;
 
 	case MMSpreadsheetHeaderConfigurationBoth: {
-		CGSize size = _upperLeftCollectionView.collectionViewLayout.collectionViewContentSize;
-#if 0 // trying to be helpful, maybe in portrait it won't show a whole data cell, well then rotate it it would. Bottom line: test on a 4s!
-		CGSize cellSize = [self collectionView:_lowerRightCollectionView
-										layout:_lowerRightCollectionView.collectionViewLayout
-						sizeForItemAtIndexPath:indexPathZero];
-		CGFloat maxLockDistance = boundsSize.height - cellSize.height;
-		if (size.height > maxLockDistance) {
-			NSAssert(NO, @"Height of header too large! Reduce the number of header rows.");
-		}
-		maxLockDistance = boundsSize.width - cellSize.width;
-		if (size.width > maxLockDistance) {
-			NSAssert(NO, @"Width of header too large! Reduce the number of header columns.");
-		}
-#endif
-		_upperLeftContainerView.frame = CGRectMake(0.0f,
-														0.0f,
-														size.width,
-														size.height);
-		_upperRightContainerView.frame = CGRectMake(size.width + MMSpreadsheetViewGridSpace,
-														0.0f,
-														boundsSize.width - size.width - MMSpreadsheetViewGridSpace,
-														size.height);
-		_lowerLeftContainerView.frame = CGRectMake(0.0f,
-														size.height + MMSpreadsheetViewGridSpace,
-														size.width,
-														boundsSize.height - size.height - MMSpreadsheetViewGridSpace);
-		_lowerRightContainerView.frame = CGRectMake(size.width + MMSpreadsheetViewGridSpace,
-														size.height + MMSpreadsheetViewGridSpace,
-														boundsSize.width - size.width - MMSpreadsheetViewGridSpace,
-														boundsSize.height - size.height - MMSpreadsheetViewGridSpace);
+		CGSize topLeft = _upperLeftCollectionView.collectionViewLayout.collectionViewContentSize;
+		//CGSize botRight = _lowerRightCollectionView.collectionViewLayout.collectionViewContentSize;
 
-		// Effective size of Secret Scroll View is the bounds of what you can see, plus the unviewable content of the bottomRight
-		CGSize topLeft = _upperLeftContainerView.bounds.size;
-		CGSize botRight = _lowerRightCollectionView.contentSize;
-		_overlayScrollView.contentSize = CGSizeMake(topLeft.width + botRight.width, topLeft.height + botRight.height);
+
+		_upperLeftCollectionView.frame = CGRectMake(	0.0f,
+														0.0f,
+														topLeft.width,
+														topLeft.height);
+//		assert(boundsSize.width > _upperLeftCollectionView.bounds.size.width);
+//		assert(boundsSize.height > _upperLeftCollectionView.bounds.size.height);
+
+		_upperRightCollectionView.frame = CGRectMake(	topLeft.width + MMSpreadsheetViewGridSpace,
+														0.0f,
+														boundsSize.width - topLeft.width - MMSpreadsheetViewGridSpace,
+														topLeft.height);
+
+
+		_lowerLeftCollectionView.frame = CGRectMake(	0,
+														topLeft.height + MMSpreadsheetViewGridSpace,
+														topLeft.width,
+														boundsSize.height - topLeft.height - MMSpreadsheetViewGridSpace);
+
+		_lowerRightCollectionView.frame = CGRectMake(	topLeft.width + MMSpreadsheetViewGridSpace,
+														topLeft.height + MMSpreadsheetViewGridSpace,
+														boundsSize.width - topLeft.width - MMSpreadsheetViewGridSpace,
+														boundsSize.height - topLeft.height - MMSpreadsheetViewGridSpace);
+
+		if(self.shadowScrollView == nil) {
+			self.shadowScrollView = nil;	// sets up the containingView and our contentSize etc
+		}
 	}	break;
 
 	default:
 		NSAssert(NO, @"What have you done?");
 		break;
 	}
+//	for(UICollectionView *cv in _collectionViews) {
+//		NSLog(@"CV tag=%d frame=%@", (int)cv.tag, NSStringFromCGRect(cv.frame));
+//	}
 }
 
-#pragma mark - UIPanGestureRecognizer callbacks
+// Idea came from the WWDC 2014 ScrollView presentation by Eliza
+- (UIView *)hitTest:(CGPoint)pt withEvent:(UIEvent *)event {
+	UIView *v = [super hitTest:pt withEvent:event];
 
-//- (void)handleUpperRightPanGesture:(UIPanGestureRecognizer *)recognizer {
-//	if (recognizer.state == UIGestureRecognizerStateBegan) {
-//		_lowerLeftContainerView.userInteractionEnabled = NO;
-//		_lowerRightContainerView.userInteractionEnabled = NO;
-//	}
-//	else if (recognizer.state == UIGestureRecognizerStateEnded) {
-//		if (self.isUpperRightBouncing == NO) {
-//			_lowerLeftContainerView.userInteractionEnabled = YES;
-//			_lowerRightContainerView.userInteractionEnabled = YES;
-//		}
-//	}
-//}
-//
-//- (void)handleLowerLeftPanGesture:(UIPanGestureRecognizer *)recognizer {
-//	if (recognizer.state == UIGestureRecognizerStateBegan) {
-//		_upperRightContainerView.userInteractionEnabled = NO;
-//		_lowerRightContainerView.userInteractionEnabled = NO;
-//	}
-//	else if (recognizer.state == UIGestureRecognizerStateEnded) {
-//		if (self.isLowerLeftBouncing == NO) {
-//			_upperRightContainerView.userInteractionEnabled = YES;
-//			_lowerRightContainerView.userInteractionEnabled = YES;
-//		}
-//	}
-//}
-//
-//- (void)handleLowerRightPanGesture:(UIPanGestureRecognizer *)recognizer {
-//	if (recognizer.state == UIGestureRecognizerStateBegan) {
-//		// NSLog(@"BEGAN!!! %@", NSStringFromCGPoint([recognizer velocityInView:self]));
-//		_upperRightContainerView.userInteractionEnabled = NO;
-//		_lowerLeftContainerView.userInteractionEnabled = NO;
-//	}
-//	else if (recognizer.state == UIGestureRecognizerStateEnded) {
-//		if (self.isLowerRightBouncing == NO) {
-//			_upperRightContainerView.userInteractionEnabled = YES;
-//			_lowerLeftContainerView.userInteractionEnabled = YES;
-//		}
-//	}
-//}
+	//BOOL oldTag = __shadowScrollView.tag;
 
-#pragma mark - OverLay scroll property setter
+	for(UIScrollView *cv in _collectionViews) {
+		CGRect frame = [cv convertRect:cv.bounds toView:self];
+		// NSLog(@"TEST PT=%@ in %@", NSStringFromCGPoint(pt), NSStringFromCGRect(frame));
+		if(CGRectContainsPoint(frame, pt)) {
+			self.shadowScrollView = cv;
+			break;
+		}
+	}
+	if(!self.shadowScrollView) {
+		CGPoint windowPoint = [self convertPoint:pt toView:self.window];
+		CGRect statusFrame = [UIApplication sharedApplication].statusBarFrame;
+		NSLog(@"HAH - PT=%@ frame=%@", NSStringFromCGPoint(windowPoint), NSStringFromCGRect(statusFrame) );
+		if(CGRectContainsPoint(statusFrame, windowPoint)) {
+			NSLog(@"Status TAP!");
+		}
+	}
 
-- (void)setBounces:(BOOL)bounces {
-	_bounces = bounces;
-	_overlayScrollView.bounces = bounces;
-}
-- (void)setHorizontalBounce:(BOOL)bounces {
-	_horizontalBounce = bounces;
-	_overlayScrollView.alwaysBounceHorizontal = bounces;
-}
-- (void)setVerticalBounce:(BOOL)bounces {
-	_verticalBounce = bounces;
-	_overlayScrollView.alwaysBounceVertical = bounces;
-}
-- (void)setDirectionalLockEnabled:(BOOL)enabled {
-	_directionalLockEnabled = enabled;
-	_overlayScrollView.directionalLockEnabled = enabled;
-}
-- (void)setScrollsToTop:(BOOL)scrollsToTop {
-	_scrollsToTop = scrollsToTop;
-	_overlayScrollView.scrollsToTop = scrollsToTop;
+	//if(__shadowScrollView.tag != oldTag) NSLog(@"Shadow Tag is %d", (int)__shadowScrollView.tag);
+
+	return v;
 }
 
 #pragma mark - DataSource property setter
 
 - (void)setDataSource:(id<MMSpreadsheetViewDataSource>)dataSource {
 	_dataSource = dataSource;
-	if (_upperLeftCollectionView) {
-		[self initializeCollectionViewLayoutItemSize:_upperLeftCollectionView name:@"Left Corner"];
-	}
-	if (_upperRightCollectionView) {
-		[self initializeCollectionViewLayoutItemSize:_upperRightCollectionView name:@"Column Labels"];
-	}
-	if (_lowerLeftCollectionView) {
-		[self initializeCollectionViewLayoutItemSize:_lowerLeftCollectionView name:@"Row Labels"];
-	}
-	if (_lowerRightCollectionView) {
-		[self initializeCollectionViewLayoutItemSize:_lowerRightCollectionView name:@"Data Cells"];
+
+	for(NSInteger i=0; i<[_collectionViews count]; ++i) {
+		[self initializeCollectionViewLayoutItemSize:_collectionViews[i] name: _collectionNames[i]];
 	}
 
 	// Validate dataSource & header configuration
@@ -612,36 +681,18 @@ const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 		break;
 		
 	case MMSpreadsheetHeaderConfigurationColumnOnly:
-		if (indexPath.mmSpreadsheetColumn >= _headerColumnCount) {
-			collectionView = _lowerRightCollectionView;
-		} else {
-			collectionView = _lowerLeftCollectionView;
-		}
+		collectionView = indexPath.mmSpreadsheetColumn >= _headerColumnCount ? _lowerRightCollectionView : _lowerLeftCollectionView;
 		break;
 		
 	case MMSpreadsheetHeaderConfigurationRowOnly:
-		if (indexPath.mmSpreadsheetRow >= _headerRowCount) {
-			collectionView = _lowerRightCollectionView;
-		}
-		else {
-			collectionView = _upperRightCollectionView;
-		}
+		collectionView = indexPath.mmSpreadsheetRow >= _headerRowCount? _lowerRightCollectionView : _upperRightCollectionView;
 		break;
 		
 	case MMSpreadsheetHeaderConfigurationBoth:
 		if (indexPath.mmSpreadsheetRow >= _headerRowCount) {
-			if (indexPath.mmSpreadsheetColumn >= _headerColumnCount) {
-				collectionView = _lowerRightCollectionView;
-			} else {
-				collectionView = _lowerLeftCollectionView;
-			}
-		}
-		else {
-			if (indexPath.mmSpreadsheetColumn >= _headerColumnCount) {
-				collectionView = _upperRightCollectionView;
-			} else {
-				collectionView = _upperLeftCollectionView;
-			}
+			collectionView = indexPath.mmSpreadsheetColumn >= _headerColumnCount ? _lowerRightCollectionView : _lowerLeftCollectionView;
+		} else {
+			collectionView = indexPath.mmSpreadsheetColumn >= _headerColumnCount ? _upperRightCollectionView : _upperLeftCollectionView;
 		}
 		break;
 		
@@ -691,7 +742,6 @@ const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 	
 	switch (collectionView.tag) {
 	case MMSpreadsheetViewCollectionUpperLeft:
-		// Don't think we need to do anything here
 		break;
 		
 	case MMSpreadsheetViewCollectionUpperRight:
@@ -712,55 +762,6 @@ const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 		break;
 	}
 	return [NSIndexPath indexPathForItem:mmSpreadsheetColumn inSection:mmSpreadsheetRow];
-}
-
-//- (void)setScrollEnabledValue:(BOOL)scrollEnabled scrollView:(UIScrollView *)scrollView {
-//	switch (scrollView.tag) {
-//	case MMSpreadsheetViewCollectionUpperLeft:
-//		// Don't think we need to do anything here
-//		break;
-//		
-//	case MMSpreadsheetViewCollectionUpperRight:
-//		_lowerLeftCollectionView.scrollEnabled = scrollEnabled;
-//		_lowerRightCollectionView.scrollEnabled = scrollEnabled;
-//		break;
-//		
-//	case MMSpreadsheetViewCollectionLowerLeft:
-//		_upperRightCollectionView.scrollEnabled = scrollEnabled;
-//		_lowerRightCollectionView.scrollEnabled = scrollEnabled;
-//		break;
-//		
-//	case MMSpreadsheetViewCollectionLowerRight:
-//		_upperRightCollectionView.scrollEnabled = scrollEnabled;
-//		_lowerLeftCollectionView.scrollEnabled = scrollEnabled;
-//		break;
-//	}
-//}
-
-- (void)checkRefreshControlWithOpen:(BOOL)andOpen {
-	CGRect r = _refreshControl.frame;
-	r.origin.y = _upperLeftContainerView.frame.origin.y - r.size.height;
-	_refreshControl.frame = r;
-
-	if(andOpen && !_openingRefreshControl && (r.origin.y > -r.size.height/2)) {
-		startValue = r.origin.y;
-		ratio = r.size.height/(startValue + r.size.height);
-		_openingRefreshControl = YES;
-
-		if([_delegate respondsToSelector:@selector(refreshControlActive:)]) {
-			dispatch_async(dispatch_get_main_queue(), ^
-				{
-					[_refreshControl startRefresh];
-					[_delegate refreshControlActive:_refreshControl];
-				});
-		}
-	}
-	if(_openingRefreshControl) {
-		CGRect rr = self.bounds;
-		CGFloat diff =	r.origin.y - startValue;
-		rr.origin.y = (CGFloat)round(diff*ratio);
-		self.bounds = rr;
-	}
 }
 
 #pragma mark - UICollectionViewDelegateFlowLayout
@@ -856,251 +857,58 @@ const static CGFloat MMSpreadsheetViewGridSpace = 1.0f;
 	}
 
 	NSIndexPath *dataSourceIndexPath = [self dataSourceIndexPathFromCollectionView:collectionView indexPath:indexPath];
-	if ([_delegate respondsToSelector:@selector(spreadsheetView:didSelectItemAtIndexPath:)]) {
-		[_delegate spreadsheetView:self didSelectItemAtIndexPath:dataSourceIndexPath];
+	if ([_spreadsheetDelegate respondsToSelector:@selector(spreadsheetView:didSelectItemAtIndexPath:)]) {
+		[_spreadsheetDelegate spreadsheetView:self didSelectItemAtIndexPath:dataSourceIndexPath];
 	}
 }
 
 - (BOOL)collectionView:(UICollectionView *)collectionView shouldShowMenuForItemAtIndexPath:(NSIndexPath *)indexPath {
 	NSIndexPath *dataSourceIndexPath = [self dataSourceIndexPathFromCollectionView:collectionView indexPath:indexPath];
-	if ([_delegate respondsToSelector:@selector(spreadsheetView:shouldShowMenuForItemAtIndexPath:)]) {
-		return [_delegate spreadsheetView:self shouldShowMenuForItemAtIndexPath:dataSourceIndexPath];
+	if ([_spreadsheetDelegate respondsToSelector:@selector(spreadsheetView:shouldShowMenuForItemAtIndexPath:)]) {
+		return [_spreadsheetDelegate spreadsheetView:self shouldShowMenuForItemAtIndexPath:dataSourceIndexPath];
 	}
 	return NO;
 }
 
 - (BOOL)collectionView:(UICollectionView *)collectionView canPerformAction:(SEL)action forItemAtIndexPath:(NSIndexPath *)indexPath withSender:(id)sender {
 	NSIndexPath *dataSourceIndexPath = [self dataSourceIndexPathFromCollectionView:collectionView indexPath:indexPath];
-	if ([_delegate respondsToSelector:@selector(spreadsheetView:canPerformAction:forItemAtIndexPath:withSender:)]) {
-		return [_delegate spreadsheetView:self canPerformAction:action forItemAtIndexPath:dataSourceIndexPath withSender:sender];
+	if ([_spreadsheetDelegate respondsToSelector:@selector(spreadsheetView:canPerformAction:forItemAtIndexPath:withSender:)]) {
+		return [_spreadsheetDelegate spreadsheetView:self canPerformAction:action forItemAtIndexPath:dataSourceIndexPath withSender:sender];
 	}
 	return NO;
 }
 
 - (void)collectionView:(UICollectionView *)collectionView performAction:(SEL)action forItemAtIndexPath:(NSIndexPath *)indexPath withSender:(id)sender {
 	NSIndexPath *dataSourceIndexPath = [self dataSourceIndexPathFromCollectionView:collectionView indexPath:indexPath];
-	if ([_delegate respondsToSelector:@selector(spreadsheetView:performAction:forItemAtIndexPath:withSender:)]) {
-		return [_delegate spreadsheetView:self performAction:action forItemAtIndexPath:dataSourceIndexPath withSender:sender];
+	if ([_spreadsheetDelegate respondsToSelector:@selector(spreadsheetView:performAction:forItemAtIndexPath:withSender:)]) {
+		return [_spreadsheetDelegate spreadsheetView:self performAction:action forItemAtIndexPath:dataSourceIndexPath withSender:sender];
 	}
 }
 
 #pragma mark - UIScrollViewDelegate
 
-- (void)scrollViewDidScroll:(UIScrollView *)sv {
-	UIScrollView *scrollView;
-	if(sv == _overlayScrollView) {
 
-//NSLog(@"SV DID : offset %@ shadow=%d",
-//NSStringFromCGPoint(secretScrollView.contentOffset),
-//(int)secretScrollView.shadowScrollView.tag
-//);
-		scrollView = _overlayScrollView.shadowScrollView;
-		if(!scrollView) return; // early setup
-		scrollView.contentOffset = _overlayScrollView.contentOffset;
-		//[scrollView setContentOffset:secretScrollView.contentOffset animated:NO];
-	} else {
-		scrollView = sv;
-	}
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+NSLog(@"scrollViewDidScroll: tag=%d ", (int)self.shadowScrollView.tag);
+	if(scrollView != self || self.shadowScrollView == nil) return;
 
-	if (scrollView == _controllingScrollView) {
-//NSLog(@"	Controlling");
-		switch (scrollView.tag) {
-		case MMSpreadsheetViewCollectionLowerLeft:
-			[self lowerLeftCollectionViewDidScrollForScrollView:scrollView];
-			break;
-			
-		case MMSpreadsheetViewCollectionUpperRight:
-			[self upperRightCollectionViewDidScrollForScrollView:scrollView];
-			break;
-			
-		case MMSpreadsheetViewCollectionLowerRight:
-			[self lowerRightCollectionViewDidScrollForScrollView:scrollView];
-			break;
-		}
-		if(_wantRefreshControl) {
-			[self checkRefreshControlWithOpen:NO];
-		}
-	} else {
-		[scrollView setContentOffset:scrollView.contentOffset animated:NO];
-	}
+	[self adjustSubviewsForScroll];
 }
 
-- (void)lowerLeftCollectionViewDidScrollForScrollView:(UIScrollView *)scrollView {
-	[_lowerRightCollectionView setContentOffset:CGPointMake(_lowerRightCollectionView.contentOffset.x, scrollView.contentOffset.y) animated:NO];
-//	  [self updateVerticalScrollIndicator];
-
-	if (scrollView.contentOffset.y <= 0.0f) {
-		CGRect rect = _upperLeftContainerView.frame;
-		rect.origin.y = 0-scrollView.contentOffset.y;
-		_upperLeftContainerView.frame = rect;
-		
-		rect = _upperRightContainerView.frame;
-		rect.origin.y = 0-scrollView.contentOffset.y;
-		_upperRightContainerView.frame = rect;
-	} else {
-		CGRect rect = _upperLeftContainerView.frame;
-		rect.origin.y = 0.0f;
-		_upperLeftContainerView.frame = rect;
-		
-		rect = _upperRightContainerView.frame;
-		rect.origin.y = 0.0f;
-		_upperRightContainerView.frame = rect;
-	}
-}
-
-- (void)upperRightCollectionViewDidScrollForScrollView:(UIScrollView *)scrollView {
-	[_lowerRightCollectionView setContentOffset:CGPointMake(scrollView.contentOffset.x, _lowerRightCollectionView.contentOffset.y) animated:NO];
-//	  [self updateHorizontalScrollIndicator];
-
-	if (scrollView.contentOffset.x <= 0.0f) {
-		CGRect rect = _upperLeftContainerView.frame;
-		rect.origin.x = 0-scrollView.contentOffset.x;
-		_upperLeftContainerView.frame = rect;
-		
-		rect = _lowerLeftContainerView.frame;
-		rect.origin.x = 0-scrollView.contentOffset.x;
-		_lowerLeftContainerView.frame = rect;
-	} else {
-		CGRect rect = _upperLeftContainerView.frame;
-		rect.origin.x = 0.0f;
-		_upperLeftContainerView.frame = rect;
-		
-		rect = _lowerLeftContainerView.frame;
-		rect.origin.x = 0.0f;
-		_lowerLeftContainerView.frame = rect;
-	}
-}
-
-- (void)lowerRightCollectionViewDidScrollForScrollView:(UIScrollView *)scrollView {
-	CGPoint offset = CGPointMake(0.0f, scrollView.contentOffset.y);
-	[_lowerLeftCollectionView setContentOffset:offset animated:NO];
-	offset = CGPointMake(scrollView.contentOffset.x, 0.0f);
-	[_upperRightCollectionView setContentOffset:offset animated:NO];
-	
-	if (scrollView.contentOffset.y <= 0.0f) {
-		CGRect rect = _upperLeftContainerView.frame;
-		rect.origin.y = 0-scrollView.contentOffset.y;
-		_upperLeftContainerView.frame = rect;
-		
-		rect = _upperRightContainerView.frame;
-		rect.origin.y = 0-scrollView.contentOffset.y;
-		_upperRightContainerView.frame = rect;
-	} else {
-		CGRect rect = _upperLeftContainerView.frame;
-		rect.origin.y = 0.0f;
-		_upperLeftContainerView.frame = rect;
-		
-		rect = _upperRightContainerView.frame;
-		rect.origin.y = 0.0f;
-		_upperRightContainerView.frame = rect;
-	}
-	
-	if (scrollView.contentOffset.x <= 0.0f) {
-		CGRect rect = _upperLeftContainerView.frame;
-		rect.origin.x = 0-scrollView.contentOffset.x;
-		
-		_upperLeftContainerView.frame = rect;
-		rect = _lowerLeftContainerView.frame;
-		rect.origin.x = 0-scrollView.contentOffset.x;
-		_lowerLeftContainerView.frame = rect;
-	} else {
-		CGRect rect = _upperLeftContainerView.frame;
-		rect.origin.x = 0.0f;
-		
-		_upperLeftContainerView.frame = rect;
-		rect = _lowerLeftContainerView.frame;
-		rect.origin.x = 0.0f;
-		_lowerLeftContainerView.frame = rect;
-	}
-}
-
-- (void)scrollViewWillBeginDragging:(UIScrollView *)sv {
+- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
 	_isScrolling = YES;
-
-	UIScrollView *scrollView;
-	if(sv == _overlayScrollView) {
-		scrollView = _overlayScrollView.shadowScrollView;
-		if(!scrollView) return;
-		scrollView.contentOffset = _overlayScrollView.contentOffset;
-		//[scrollView setContentOffset:secretScrollView.contentOffset animated:NO];
-	} else {
-		assert(!"Impossible");
-	}
-
-NSLog(@"SV WILL BEGIN");
-	_controllingScrollView = scrollView;
-
-//	[self setScrollEnabledValue:NO scrollView:scrollView];
-	
-//	if (_controllingScrollView != scrollView) {
-//		// TOD0: What does this original code do? Maybe in case it was animating, to force it to stop???
-//		[_upperLeftCollectionView setContentOffset:_upperLeftCollectionView.contentOffset animated:NO];
-//		[_lowerLeftCollectionView setContentOffset:_lowerLeftCollectionView.contentOffset animated:NO];
-//		[_upperRightCollectionView setContentOffset:_upperRightCollectionView.contentOffset animated:NO];
-//		[_lowerRightCollectionView setContentOffset:_lowerRightCollectionView.contentOffset animated:NO];
-//	}
-//	  [self showScrollIndicators];
-
-//	[self setScrollEnabledValue:YES scrollView:scrollView];
+	// NSLog(@"scrollViewWillBeginDragging");
 }
 
-- (void)scrollViewWillEndDragging:(UIScrollView *)sv withVelocity:(CGPoint)velocity targetContentOffset:(inout CGPoint *)targetContentOffset {
+- (void)scrollViewWillEndDragging:(UIScrollView *)scrollView withVelocity:(CGPoint)velocity targetContentOffset:(inout CGPoint *)targetContentOffset {
 	// Block UI if we're in a bounce.
 	// Without this, you can lock the scroll views in a scroll which looks weird.
 
-	UIScrollView *scrollView;
-	if(sv == _overlayScrollView) {
-		scrollView = _overlayScrollView.shadowScrollView;
-		if(!scrollView) return;
-		scrollView.contentOffset = _overlayScrollView.contentOffset;
-		//[scrollView setContentOffset:secretScrollView.contentOffset animated:NO];
-	} else {
-		assert(!"Impossible");
-	}
+	NSLog(@"scrollViewWillEndDragging");
 
 	CGPoint toffset = *targetContentOffset;
-	switch (scrollView.tag) {
-	case MMSpreadsheetViewCollectionLowerLeft: {
-		BOOL willBouncePastZeroY = velocity.y < 0.0f && !(toffset.y > 0.0f);
-		BOOL willBouncePastMaxY = toffset.y > _lowerLeftCollectionView.contentSize.height - _lowerLeftCollectionView.frame.size.height - 0.1f && velocity.y > 0.0f;
-		if (willBouncePastZeroY || willBouncePastMaxY) {
-//			_upperRightContainerView.userInteractionEnabled = NO;
-//			_lowerRightContainerView.userInteractionEnabled = NO;
-//			_lowerLeftBouncing = YES;
-		}
-		else if(_snapToGrid) {
-			*targetContentOffset = [self alignOffset:toffset collectionView:_lowerLeftCollectionView];
-		}
-	}	break;
-
-	case MMSpreadsheetViewCollectionUpperRight: {
-		BOOL willBouncePastZeroX = velocity.x < 0.0f && !(toffset.x > 0.0f);
-		BOOL willBouncePastMaxX = toffset.x > _upperRightCollectionView.contentSize.width - _upperRightCollectionView.frame.size.width - 0.1f && velocity.x > 0.0f;
-		if (willBouncePastZeroX || willBouncePastMaxX) {
-//			_lowerRightContainerView.userInteractionEnabled = NO;
-//			_lowerLeftContainerView.userInteractionEnabled = NO;
-//			_upperRightBouncing = YES;
-		}
-		else if(_snapToGrid) {
-			*targetContentOffset = [self alignOffset:toffset collectionView:_upperRightCollectionView];
-		}
-	}	break;
-
-	case MMSpreadsheetViewCollectionLowerRight: {
-		BOOL willBouncePastZeroX = velocity.x < 0.0f && !(toffset.x > 0.0f);
-		BOOL willBouncePastMaxX = toffset.x > _upperRightCollectionView.contentSize.width - _upperRightCollectionView.frame.size.width - 0.1f && velocity.x > 0.0f;
-		BOOL willBouncePastZeroY = velocity.y < 0.0f && !(toffset.y > 0.0f);
-		BOOL willBouncePastMaxY = toffset.y > _lowerLeftCollectionView.contentSize.height - _lowerLeftCollectionView.frame.size.height - 0.1f && velocity.y > 0.0f;
-		if (willBouncePastZeroX || willBouncePastMaxX ||
-			willBouncePastZeroY || willBouncePastMaxY) {
-//			_upperRightContainerView.userInteractionEnabled = NO;
-//			_lowerLeftContainerView.userInteractionEnabled = NO;
-//			_lowerRightBouncing = YES;
-		}
-		else if(_snapToGrid) {
-			*targetContentOffset = [self alignOffset:toffset collectionView:_lowerRightCollectionView];
-		}
-	}	break;
+	if(_snapToGrid) {
+		*targetContentOffset = [self alignOffset:toffset collectionView:(UICollectionView *)self.shadowScrollView];
 	}
 	// NSLog(@"%@scrollViewDidEndDragging : withVelocity", _isScrolling ? @"" : @"-");
 }
@@ -1115,105 +923,66 @@ NSLog(@"SV WILL BEGIN");
 	return [layout snapToGrid:pt];
 }
 
-- (void)scrollViewDidEndDragging:(UIScrollView *)sv willDecelerate:(BOOL)decelerate
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate
 {
-	UIScrollView *scrollView;
-	if(sv == _overlayScrollView) {
-		scrollView = _overlayScrollView.shadowScrollView;
-		if(!scrollView) return;
-		scrollView.contentOffset = _overlayScrollView.contentOffset;
-		//[scrollView setContentOffset:secretScrollView.contentOffset animated:NO];
-	} else {
-		assert(!"Impossible");
-	}
+//	if(_wantRefreshControl) {
+//		[self checkRefreshControlWithOpen:YES];
+//	}
+NSLog(@"scrollViewDidEndDragging");
 
-	if(_wantRefreshControl) {
-		[self checkRefreshControlWithOpen:YES];
-	}
 	if(!decelerate) {
 		[self scrollViewDidStop:scrollView];
 	}
 	//NSLog(@"%@scrollViewDidEndDragging : willDecelerate", _isScrolling ? @"" : @"-");
 }
 
-- (void)scrollViewDidEndDecelerating:(UIScrollView *)sv {
+- (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
+	if(scrollView != self) return;
 
-	UIScrollView *scrollView;
-	if(sv == _overlayScrollView) {
-		scrollView = _overlayScrollView.shadowScrollView;
-		if(!scrollView) return;
-		scrollView.contentOffset = _overlayScrollView.contentOffset;
-		//[scrollView setContentOffset:secretScrollView.contentOffset animated:NO];
-	} else {
-		assert(!"Impossible");
-	}
-
+NSLog(@"scrollViewDidEndDecelerating");
 	[self scrollViewDidStop:scrollView];
 }
 
 // Helper function, not a delegate
 - (void)scrollViewDidStop:(UIScrollView *)scrollView {
 	if(!_isScrolling) return;
+	if(scrollView != self) return;
 
-//	_upperRightContainerView.userInteractionEnabled = YES;
-//	_lowerRightContainerView.userInteractionEnabled = YES;
-//	_lowerLeftContainerView.userInteractionEnabled = YES;
-//	_upperRightBouncing = NO;
-//	_lowerLeftBouncing = NO;
-//	_lowerRightBouncing = NO;
+NSLog(@"scrollViewDidStop");
 
 	// The problem with isTracking is that dragging the view around then letting up will still register isTracking (Apple bug?)
 	if (!scrollView.isDecelerating && !scrollView.isDragging/* && !scrollView.isTracking*/) {
-		[self setNeedsLayout];
+//		[self setNeedsLayout];
 
-//		NSLog(@"OFFSET: %@ size %@ FrameSize %@",
-//		NSStringFromCGPoint(_overlayScrollView.contentOffset),
-//		NSStringFromCGSize(_overlayScrollView.contentSize),
-//		NSStringFromCGSize(_overlayScrollView.bounds.size)
-//		);
-
-		_overlayScrollView.shadowScrollView = nil;
-
+		self.shadowScrollView = nil;
 		_isScrolling = NO;
 
-		if([_delegate respondsToSelector:@selector(scrollViewFinishedScrolling)]) {
-			[_delegate scrollViewFinishedScrolling];
+		if([_spreadsheetDelegate respondsToSelector:@selector(scrollViewFinishedScrolling)]) {
+			[_spreadsheetDelegate scrollViewFinishedScrolling];
 		}
 	}
 }
 
 - (BOOL)scrollViewShouldScrollToTop:(UIScrollView *)scrollView {
-	return _scrollsToTop;
+	NSLog(@"SHOULD!");
+	return YES;
 }
 
-- (void)scrollViewDidScrollToTop:(UIScrollView *)sv
+- (void)scrollViewDidScrollToTop:(UIScrollView *)scrollView
 {
-NSLog(@"SCROLL TO TOP!!!");
-	UIScrollView *scrollView;
-	if(sv == _overlayScrollView) {
-		scrollView = _overlayScrollView.shadowScrollView;
-		if(scrollView) {
-			[scrollView setContentOffset:_overlayScrollView.contentOffset animated:NO];
-		}
-	} else {
-		scrollView = sv;
-	}
+	if(scrollView != self) return;
+
+NSLog(@"scrollViewDidScrollToTop");
 
 	[self scrollViewDidStop:scrollView];
 }
 
-- (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)sv
+- (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView
 {
-	UIScrollView *scrollView;
-	if(sv == _overlayScrollView) {
-		assert(_overlayScrollView.shadowScrollView);
-		scrollView = _overlayScrollView.shadowScrollView;
-		[scrollView setContentOffset:_overlayScrollView.contentOffset animated:NO];
-	} else {
-		scrollView = sv;
-		NSLog(@"HHHHHHHH scrollViewDidEndScrollingAnimation scrollViewDidEndScrollingAnimation scrollViewDidEndScrollingAnimation");
-	}
+	if(scrollView != self) return;
 
+
+NSLog(@"scrollViewDidEndScrollingAnimation");
 	[self scrollViewDidStop:scrollView];
 }
 
@@ -1222,58 +991,6 @@ NSLog(@"SCROLL TO TOP!!!");
 @interface MMRefreshControl ()
 @property (nonatomic, strong, readwrite) UILabel *textLabel;
 @property (nonatomic, strong, readwrite) UIActivityIndicatorView *indicator;
-
-@end
-
-@implementation MMScrollView
-@synthesize shadowScrollView=__shadowScrollView;	// Make it harder to use directly with single '_'
-
-- (void)setShadowScrollView:(UIScrollView *)shadowScrollView {
-	__shadowScrollView = shadowScrollView;
-
-	MMSpreadsheetView *ss = (MMSpreadsheetView *)self.superview;
-
-	CGSize topLeft = ss.upperLeftContainerView.bounds.size;
-	CGSize botRight = ss.lowerRightCollectionView.contentSize;
-
-	if(shadowScrollView == ss.upperRightCollectionView) {
-		self.contentSize = CGSizeMake(topLeft.width + botRight.width, topLeft.height);
-		self.contentOffset = shadowScrollView.contentOffset;
-	} else
-	if(shadowScrollView == ss.lowerLeftCollectionView) {
-		self.contentSize = CGSizeMake(topLeft.width, topLeft.height + botRight.height);
-		self.contentOffset = shadowScrollView.contentOffset;
-	} else {
-		self.contentSize = CGSizeMake(topLeft.width + botRight.width, topLeft.height + botRight.height);
-		self.contentOffset = ss.lowerRightCollectionView.contentOffset;
-	}
-}
-
-// Idea came from the WWDC 2014 ScrollView presentation by Eliza
-- (UIView *)hitTest:(CGPoint)pt withEvent:(UIEvent *)event {
-	UIView *v = [super hitTest:pt withEvent:event];
-
-	MMSpreadsheetView *ss = (MMSpreadsheetView *)self.superview;
-	CGPoint mmPt = [self convertPoint:pt toView:ss];
-
-	if(CGRectContainsPoint(ss.upperRightContainerView.frame, mmPt)) {
-		self.shadowScrollView = ss.upperRightCollectionView;
-		self.alwaysBounceVertical = NO;
-	} else
-	if(CGRectContainsPoint(ss.lowerLeftContainerView.frame, mmPt)) {
-		self.shadowScrollView = ss.lowerLeftCollectionView;
-		self.alwaysBounceVertical = YES;
-	} else
-	if(CGRectContainsPoint(ss.lowerRightContainerView.frame, mmPt)) {
-		self.shadowScrollView = ss.lowerRightCollectionView;
-		self.alwaysBounceVertical = YES;
-	} else {
-		self.shadowScrollView = nil;
-	}
-	//if(wasNull) NSLog(@"Secret Tag is %d", (int)_shadowScrollView.tag);
-
-	return v;
-}
 
 @end
 

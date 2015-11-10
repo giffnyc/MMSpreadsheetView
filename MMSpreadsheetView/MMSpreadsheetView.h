@@ -208,7 +208,7 @@ NS_ASSUME_NONNULL_BEGIN
  @warning An NSIndexPath category is provided so that *indexPath.mmSpreadsheetRow* represents a row and *indexPath.mmSpreadsheetColumn* represents a column.
  @warning as the number of cells shown increases, scrolling performance declines. A large grid (1000x1000) takes a long time to initialize, but if the cell sizes are large enough (150x150), scrolling performance is not affected. However, a small grid (50x50) of (20x20) cells basically doesn't scroll.
  */
-@interface MMSpreadsheetView : UIView
+@interface MMSpreadsheetView : UIScrollView
 
 ///---------------------------------------
 /// @name Spreadsheet View Properties
@@ -221,7 +221,7 @@ NS_ASSUME_NONNULL_BEGIN
  
  The delegate object is responsible for managing selection behavior and interactions with individual items.
  */
-@property (nonatomic, weak) id<MMSpreadsheetViewDelegate> delegate;
+@property (nonatomic, weak) id<MMSpreadsheetViewDelegate> spreadsheetDelegate;
 
 /**
  The object that provides the data for the spreadsheet view.
@@ -328,48 +328,48 @@ NS_ASSUME_NONNULL_BEGIN
  
  @discussion The default value is UIEdgeInsetsZero.
  */
-@property (nonatomic, assign) UIEdgeInsets scrollIndicatorInsets;
+//@property (nonatomic, assign) UIEdgeInsets scrollIndicatorInsets;
 
 /**
  A Boolean value that controls whether the horizontal scroll indicator is visible.
  
  @discussion The default value is YES. The indicator is visible while tracking is underway and fades out after tracking.
  */
-@property (nonatomic, assign) BOOL showsHorizontalScrollIndicator;
+//@property (nonatomic, assign) BOOL showsHorizontalScrollIndicator;
 
 /**
  A Boolean value that controls whether the vertical scroll indicator is visible.
  
  @discussion The default value is YES. The indicator is visible while tracking is underway and fades out after tracking.
  */
-@property (nonatomic, assign) BOOL showsVerticalScrollIndicator;
+//@property (nonatomic, assign) BOOL showsVerticalScrollIndicator;
 
 /**
  Displays the scroll indicators momentarily.
  
  @discussion You should call this method whenever you bring the spreadsheet view to front.
  */
-- (void)flashScrollIndicators;
+//- (void)flashScrollIndicators;
 
 ///---------------------------------------
 /// @name Scroll View Properties
 ///---------------------------------------
 
-@property (nonatomic, assign) BOOL bounces;
-@property (nonatomic, assign) BOOL horizontalBounce;
-@property (nonatomic, assign) BOOL verticalBounce;
-@property (nonatomic, assign) BOOL scrollsToTop;
+//@property (nonatomic, assign) BOOL bounces;
+//@property (nonatomic, assign) BOOL horizontalBounce;
+//@property (nonatomic, assign) BOOL verticalBounce;
+//@property (nonatomic, assign) BOOL scrollsToTop;
 
 /**
  A Boolean value that determines whether scrolling is disabled in a particular direction.
  
  @discussion If this property is NO, scrolling is permitted in both horizontal and vertical directions. If this property is YES and the user begins dragging in one general direction (horizontally or vertically), the scroll view disables scrolling in the other direction. If the drag direction is diagonal, then scrolling will not be locked and the user can drag in any direction until the drag completes. The default value is NO.
  */
-@property (nonatomic, assign) BOOL directionalLockEnabled;
+//@property (nonatomic, assign) BOOL directionalLockEnabled;
 
 @property (nonatomic, assign) BOOL isScrolling;
 @property (nonatomic, assign) BOOL snapToGrid;
-@property (nonatomic, assign) BOOL wantRefreshControl;	// see extra delegate method
+//@property (nonatomic, assign) BOOL wantRefreshControl;	// see extra delegate method
 @property (nonatomic, strong, nullable) UINavigationController *navigationController;	// when set, hide the Navigation bar on up-swipes, and show it on down-swipes
 @property (nonatomic, strong, nullable) MMRefreshControl *refreshControl;
 //@property (nonatomic, strong, readonly) UIScrollView *shadowScrollView;	// when received, the contentOffset is the offset of the bottom right scroll view

@@ -113,6 +113,14 @@ NS_ASSUME_NONNULL_BEGIN
 ///---------------------------------------
 
 /**
+ Asks the delegate if the item at the specified index path can be selected.
+ 
+ @param spreadsheetView The spreadsheet view object that is notifying you of the selection change.
+ @param indexPath The index path of the cell to be selected.
+ */
+- (BOOL)spreadsheetView:(MMSpreadsheetView *)spreadsheetView shouldSelectItemAtIndexPath:(NSIndexPath *)indexPath;
+
+/**
  Tells the delegate that the item at the specified index path was selected.
  
  @param spreadsheetView The spreadsheet view object that is notifying you of the selection change.
@@ -188,8 +196,23 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)spreadsheetView:(MMSpreadsheetView *)spreadsheetView performAction:(SEL)action forItemAtIndexPath:(NSIndexPath *)indexPath withSender:(id)sender;
 
+
+/**
+ User has pulled down the Refresh Control.
+ 
+ @param control The control, which can also be accessed via a property.
+
+@discussion Consider turning off user interaction while its running, and disabling any Navigation Bar controls.
+
+ */
 - (void)refreshControlActive:(MMRefreshControl *)control;
 
+
+/**
+ Scroll View has stopped moving and the user has removed all touches.
+ 
+ @param control The control, which can also be accessed via a property.
+ */
 - (void)scrollViewFinishedScrolling;
 
 @end
@@ -317,72 +340,24 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)reloadData;
 
-//- (void)addRefreshControl:(UIRefreshControl *)refreshControl;
-
-///---------------------------------------
-/// @name Managing the Scroll Indicator
-///---------------------------------------
-
-/**
- The distance the scroll indicators are inset from the edge of the scroll view.
- 
- @discussion The default value is UIEdgeInsetsZero.
- */
-//@property (nonatomic, assign) UIEdgeInsets scrollIndicatorInsets;
-
-/**
- A Boolean value that controls whether the horizontal scroll indicator is visible.
- 
- @discussion The default value is YES. The indicator is visible while tracking is underway and fades out after tracking.
- */
-//@property (nonatomic, assign) BOOL showsHorizontalScrollIndicator;
-
-/**
- A Boolean value that controls whether the vertical scroll indicator is visible.
- 
- @discussion The default value is YES. The indicator is visible while tracking is underway and fades out after tracking.
- */
-//@property (nonatomic, assign) BOOL showsVerticalScrollIndicator;
-
-/**
- Displays the scroll indicators momentarily.
- 
- @discussion You should call this method whenever you bring the spreadsheet view to front.
- */
-//- (void)flashScrollIndicators;
-
-///---------------------------------------
-/// @name Scroll View Properties
-///---------------------------------------
-
-//@property (nonatomic, assign) BOOL bounces;
-//@property (nonatomic, assign) BOOL horizontalBounce;
-//@property (nonatomic, assign) BOOL verticalBounce;
-//@property (nonatomic, assign) BOOL scrollsToTop;
-
-/**
- A Boolean value that determines whether scrolling is disabled in a particular direction.
- 
- @discussion If this property is NO, scrolling is permitted in both horizontal and vertical directions. If this property is YES and the user begins dragging in one general direction (horizontally or vertically), the scroll view disables scrolling in the other direction. If the drag direction is diagonal, then scrolling will not be locked and the user can drag in any direction until the drag completes. The default value is NO.
- */
-//@property (nonatomic, assign) BOOL directionalLockEnabled;
-
-@property (nonatomic, assign) BOOL isScrolling;
-@property (nonatomic, assign) BOOL snapToGrid;
-@property (nonatomic, assign) BOOL wantRefreshControl;	// see extra delegate method
-@property (nonatomic, strong, nullable) UINavigationController *navigationController;	// when set, hide the Navigation bar on up-swipes, and show it on down-swipes
+@property (nonatomic, assign) BOOL isScrolling;	// Query to see if scrolling is happening.
+@property (nonatomic, assign) BOOL snapToGrid;	// Snap the cells to top left
+@property (nonatomic, assign) BOOL wantRefreshControl;	// Want a pull to refresh control?
+@property (nonatomic, strong, nullable) UINavigationController *navigationController;	// when set, enables the various 'hide...' methods to hide/show the nav bar
 @property (nonatomic, strong, nullable) MMRefreshControl *refreshControl;
 
 // DFH: new to return the actual cell using a dataSourceIndexPath
-- (nullable UICollectionViewCell *)cellForItemAtDataSourceIndexPath:(NSIndexPath *)indexPath;
+- (nullable UICollectionViewCell *)cellForItemAtDataSourceIndexPath:(NSIndexPath *)dataSourcendexPath;
 
 // need this to dynamically update cell content
 - (UICollectionView *)collectionViewForDataSourceIndexPath:(NSIndexPath *)indexPath;
+
 - (NSIndexPath *)dataSourceIndexPathFromCollectionView:(UICollectionView *)collectionView indexPath:(NSIndexPath *)indexPath;
 
+// potentially hide the tab bar during view rotations or via some control
 - (void)hideTabBar:(BOOL)hide withAnimationDuration:(CGFloat)animateDuration coordinator:(nullable id<UIViewControllerTransitionCoordinator>)coordinator;
 
-- (void)correctContentOffset:(BOOL)wasAtMax;
+//- (void)correctContentOffset:(BOOL)wasAtMax;
 
 @end
 

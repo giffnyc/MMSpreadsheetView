@@ -820,6 +820,15 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 
 #pragma mark - UICollectionViewDelegate
 
+- (BOOL)collectionView:(UICollectionView *)collectionView shouldSelectItemAtIndexPath:(NSIndexPath *)indexPath {
+	BOOL ret = YES;
+	NSIndexPath *dataSourceIndexPath = [self dataSourceIndexPathFromCollectionView:collectionView indexPath:indexPath];
+	if([_spreadsheetDelegate respondsToSelector:@selector(spreadsheetView:shouldSelectItemAtIndexPath:)]) {
+		ret = [_spreadsheetDelegate spreadsheetView:self shouldSelectItemAtIndexPath:dataSourceIndexPath];
+	}
+	return ret;
+}
+
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
 	if(_selectedItemCollectionView != nil) {
 		if(collectionView == _selectedItemCollectionView) {

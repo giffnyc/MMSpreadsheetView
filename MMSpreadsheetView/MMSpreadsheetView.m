@@ -295,9 +295,6 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 }
 
 - (void)correctContentOffset:(BOOL)wasAtMax {
-
-	abort();
-
 	CGFloat maxRightOffset = maxContentOffset(_lowerRightCollectionView, _lowerRightCollectionView.contentInset).y;
 	CGPoint contentOffsetLeft = _lowerLeftCollectionView.contentOffset;
 	CGPoint contentOffsetRight = _lowerRightCollectionView.contentOffset;
@@ -315,9 +312,6 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 - (void)hideTabBar:(BOOL)hide withAnimationDuration:(CGFloat)animateDuration coordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
 	UITabBarController *tabBarController = _navigationController.tabBarController;
 	UITabBar *tabBar = tabBarController.tabBar;
-
-	abort();
-
 	if(tabBar.translucent) {
 		CGFloat offset = hide ? 0 : tabBar.frame.size.height;
 		UIEdgeInsets loadingInsetRight = _lowerRightCollectionView.contentInset;
@@ -521,16 +515,8 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 	NSIndexPath *indexPathZero = [NSIndexPath indexPathForItem:0 inSection:0];
 
 	CGRect bounds = self.bounds;
-NSLog(@"BOUNDS FRAME %@", NSStringFromCGRect(bounds));
 	CGSize boundsSize = bounds.size;
-NSLog(@"BOUNDS SIZE 1 %@", NSStringFromCGSize(boundsSize));
 	boundsSize.height -= self.contentInset.top + self.contentInset.bottom;
-NSLog(@"TOP %d", (int)self.contentInset.top);
-NSLog(@"BOT %d", (int)self.contentInset.bottom);
-NSLog(@"BOUNDS SIZE 2 %@", NSStringFromCGSize(boundsSize));
-
-
-
 
 	switch(_spreadsheetHeaderConfiguration) {
 	case MMSpreadsheetHeaderConfigurationNone:
@@ -614,9 +600,6 @@ NSLog(@"BOUNDS SIZE 2 %@", NSStringFromCGSize(boundsSize));
 		NSAssert(NO, @"What have you done?");
 		break;
 	}
-
-NSLog(@"LOWER RIGHT FRAME %@", NSStringFromCGRect(self.lowerRightCollectionView.frame));
-
 }
 
 // Idea came from the WWDC 2014 ScrollView presentation by Eliza

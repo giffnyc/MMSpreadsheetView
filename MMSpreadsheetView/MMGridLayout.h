@@ -41,11 +41,11 @@
 ///---------------------------------------
 
 /**
- The height for each cell in the grid.
+ Efficeincy mode for layout sizes.
  
- @discussion This will be set either by `MMSpreadsheetView` or `MMGridLayout` using a delegate call to collectionView:layout:sizeForItemAtIndexPath: via the `setItemHeight:` method. The layout is invalidated when the itemHeight is changed.
+ @discussion Normally leave alone, but you need to reset it to NO when the column sizes change (spreadsheet.invalidate)
  */
-//@property (nonatomic, assign) CGSize itemSize;
+@property (nonatomic, assign) BOOL isInitialized;
 
 /**
  The space between cells.

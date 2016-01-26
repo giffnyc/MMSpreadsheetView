@@ -253,6 +253,13 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, weak) id<MMSpreadsheetViewDataSource> dataSource;
 
+/**
+ Cell Spacing.
+ 
+ @discussion Convenience to set all cell spacing values
+ */
+@property (nonatomic, assign) CGFloat cellSpacing;
+
 
 ///---------------------------------------
 /// @name Initializing & Setup
@@ -340,6 +347,14 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)reloadData;
 
+/**
+ Forces a re-layout of the spreadsheet view.
+ 
+ @discussion Call this method when the number or size of the columns change..
+ 
+ */
+- (void)invalidateLayout;
+
 @property (nonatomic, assign) BOOL isScrolling;	// Query to see if scrolling is happening.
 @property (nonatomic, assign) BOOL snapToGrid;	// Snap the cells to top left
 @property (nonatomic, assign) BOOL wantRefreshControl;	// Want a pull to refresh control?
@@ -367,6 +382,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)startRefresh;
 - (void)stopRefresh;
+- (BOOL)isRefreshing;
 
 @end
 

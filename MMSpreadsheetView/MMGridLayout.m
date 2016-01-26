@@ -25,7 +25,6 @@
 
 @property (nonatomic, assign) NSInteger gridRowCount;
 @property (nonatomic, assign) NSInteger gridColumnCount;
-@property (nonatomic, assign) BOOL isInitialized;
 
 @property (nonatomic, strong) NSMutableArray *widths;
 @property (nonatomic, strong) NSMutableArray *heights;
@@ -55,6 +54,7 @@
 
 - (void)prepareLayout {
 	[super prepareLayout];
+
 	self.gridRowCount = [self.collectionView numberOfSections];
 	self.gridColumnCount = [self.collectionView numberOfItemsInSection:0];
 	if(_gridColumnCount == 0 || _gridRowCount == 0) {  // DFH added _gridRowCount == 0

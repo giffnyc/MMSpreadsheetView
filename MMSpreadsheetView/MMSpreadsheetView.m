@@ -81,6 +81,7 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 	BOOL hidesBarsOnSwipe;
 }
 @synthesize shadowScrollView=__shadowScrollView;	// Make it harder to use directly with single '_'
+@synthesize cellSpacing=_cellSpacing;
 
 - (instancetype)init {
 	return [self initWithNumberOfHeaderRows:0 numberOfHeaderColumns:0 frame:CGRectZero];
@@ -418,8 +419,30 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 	[self setNeedsLayout];	// In case transition between some "data" rows and none
 }
 
+-  (void)invalidateLayout {
+	for(UICollectionView *cv in _collectionViews) {
+		MMGridLayout *layout = (MMGridLayout *)cv.collectionViewLayout;
+		layout.isInitialized = NO;
+		[layout invalidateLayout];
+		[cv reloadData];
+	}
+}
+
 - (void)flashScrollIndicators {
 	[self flashScrollIndicators];
+}
+
+- (CGFloat)cellSpacing {
+	return _cellSpacing;
+}
+- (void)setCellSpacing:(CGFloat)cellSpacing {
+	_cellSpacing = cellSpacing;
+
+	[_collectionViews enumerateObjectsUsingBlock:^(UICollectionView * _Nonnull cv, NSUInteger idx, BOOL * _Nonnull stop) {
+		MMGridLayout *gl = (MMGridLayout *)cv.collectionViewLayout;
+		gl.cellSpacing = _cellSpacing;
+	} ];
+
 }
 
 #pragma mark - View Setup functions
@@ -1004,17 +1027,14 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 
 - (instancetype) initWithFrame:(CGRect)frame {
 	if((self = [super initWithFrame:frame])) {
-		NSLayoutConstraint *c;
 
 		self.indicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
 		_indicator.translatesAutoresizingMaskIntoConstraints = NO;
 		[self addSubview:_indicator];
 		// TODO: NSLayoutAnchor
 
-		c = [self.centerXAnchor constraintEqualToAnchor:_indicator.centerXAnchor];
-		[self addConstraint:c];
-		c = [self.centerYAnchor constraintEqualToAnchor:_indicator.centerYAnchor];
-		[self addConstraint:c];
+		[self.centerXAnchor constraintEqualToAnchor:_indicator.centerXAnchor].active = YES;
+		[self.centerYAnchor constraintEqualToAnchor:_indicator.centerYAnchor].active = YES;
 
 		_indicator.color = [UIColor blackColor];
 		_indicator.hidesWhenStopped = NO;
@@ -1025,10 +1045,8 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 		_textLabel.font = [UIFont boldSystemFontOfSize:17];
 		[self addSubview:_textLabel];
 
-		c = [self.centerXAnchor constraintEqualToAnchor:_textLabel.centerXAnchor];
-		[self addConstraint:c];
-		c = [self.bottomAnchor constraintEqualToAnchor:_textLabel.bottomAnchor constant:4];
-		[self addConstraint:c];
+		[self.centerXAnchor constraintEqualToAnchor:_textLabel.centerXAnchor].active = YES;
+		[self.bottomAnchor constraintEqualToAnchor:_textLabel.bottomAnchor constant:4].active = YES;
 		[_textLabel sizeToFit];
 
 		self.backgroundColor = [UIColor whiteColor];
@@ -1042,6 +1060,10 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 
 - (void)startRefresh {
 	[_indicator startAnimating];
+}
+
+- (BOOL)isRefreshing {
+	return _indicator.isAnimating;
 }
 
 - (void)stopRefresh {

@@ -502,6 +502,7 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 	collectionView.showsHorizontalScrollIndicator = NO;
 	collectionView.showsVerticalScrollIndicator = NO;
 	collectionView.scrollEnabled = NO;
+	collectionView.scrollsToTop = NO;
 	[_containerView addSubview:collectionView];
 }
 
@@ -897,6 +898,24 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 
 #pragma mark - UIScrollViewDelegate
 
+- (BOOL)scrollViewShouldScrollToTop:(UIScrollView *)scrollView {
+	//NSLog(@"scrollViewShouldScrollToTop %@", NSStringFromCGPoint(scrollView.contentOffset));
+
+	if(_isScrolling == false) {
+		[_lowerLeftCollectionView setContentOffset:CGPointMake(0, 0) animated:YES];
+		CGFloat x = _lowerRightCollectionView.contentOffset.x;
+		[_lowerRightCollectionView setContentOffset:CGPointMake(x, 0) animated:YES];
+	}
+
+	return !_isScrolling;
+}
+- (void)scrollViewDidScrollToTop:(UIScrollView *)scrollView
+{
+	//if(scrollView != self) return;
+	// NSLog(@"scrollViewDidScrollToTop");
+	//NSLog(@"scrollViewDidScrollToTop %@", NSStringFromCGPoint(scrollView.contentOffset));
+	//	[self scrollViewDidStop];
+}
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
 	// NSLog(@"scrollViewDidScroll: tag=%d %@", (int)self.shadowScrollView.tag, NSStringFromCGPoint(scrollView.contentOffset));
@@ -970,7 +989,7 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
 	if(scrollView != self) return;
-	//NSLog(@"scrollViewDidEndDecelerating");
+	// NSLog(@"scrollViewDidEndDecelerating");
 
 	[self scrollViewDidStop];
 }
@@ -980,6 +999,8 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 	if(!_isScrolling) {
 		return;
 	}
+
+	// NSLog(@"scrollViewDidStop");
 
 //	NSLog(@"scrollViewDidStop: isDecel=%d isDragging=%d isTracking=%d", (int)self.isDecelerating, (int)self.isDragging, (int)self.isTracking);
 //	dispatch_async(dispatch_get_main_queue(), ^
@@ -999,19 +1020,11 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 	}
 }
 
-- (void)scrollViewDidScrollToTop:(UIScrollView *)scrollView
-{
-	if(scrollView != self) return;
-	// NSLog(@"scrollViewDidScrollToTop");
-
-	[self scrollViewDidStop];
-}
-
 - (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView
 {
 	if(scrollView != self) return;
-	// NSLog(@"scrollViewDidEndScrollingAnimation");
-
+	//	NSLog(@"scrollViewDidEndScrollingAnimation");
+	//	self.contentOffset = CGPointMake(0, 0.01);
 	[self scrollViewDidStop];
 }
 

@@ -62,7 +62,7 @@
 	}
 
 	if (!_isInitialized) {
-NSLog(@"PREPARE START");
+		// NSLog(@"PREPARE START");
 		self.widths = [NSMutableArray arrayWithCapacity:_gridColumnCount];
 		self.heights = [NSMutableArray arrayWithCapacity:_gridRowCount];
 		id<UICollectionViewDelegateFlowLayout> delegate = (id)self.collectionView.delegate;
@@ -77,7 +77,7 @@ NSLog(@"PREPARE START");
 			[_heights addObject:@(size.height + _cellSpacing)];
 		}
 
-NSLog(@"PREPARE END");
+		// NSLog(@"PREPARE END");
 		self.isInitialized = YES;
 	}
 }

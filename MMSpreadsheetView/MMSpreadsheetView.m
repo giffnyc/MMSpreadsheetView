@@ -661,11 +661,11 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 	}
 
 	// Validate dataSource & header configuration
-	NSInteger maxRows = [_dataSource numberOfRowsInSpreadsheetView:self];
-	NSInteger maxCols = [_dataSource numberOfColumnsInSpreadsheetView:self];
-	
-	NSAssert(_headerColumnCount <= maxCols, @"Invalid configuration: number of header columns must be less than or equal to (dataSource) numberOfColumnsInSpreadsheetView");
-	NSAssert(_headerRowCount <= maxRows, @"Invalid configuration: number of header rows must be less than or equal to (dataSource) numberOfRowsInSpreadsheetView");
+
+	NSAssert(_headerColumnCount <= [_dataSource numberOfColumnsInSpreadsheetView:self],
+		@"Invalid configuration: number of header columns must be less than or equal to (dataSource) numberOfColumnsInSpreadsheetView");
+	NSAssert(_headerRowCount <= [_dataSource numberOfRowsInSpreadsheetView:self],
+		@"Invalid configuration: number of header rows must be less than or equal to (dataSource) numberOfRowsInSpreadsheetView");
 }
 
 - (void)initializeCollectionViewLayoutItemSize:(UICollectionView *)collectionView name:(NSString*)name {

@@ -359,7 +359,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL snapToGrid;	// Snap the cells to top left
 @property (nonatomic, assign) BOOL wantRefreshControl;	// Want a pull to refresh control?
 @property (nonatomic, strong, nullable) UINavigationController *navigationController;	// when set, enables the various 'hide...' methods to hide/show the nav bar
-@property (nonatomic, strong, nullable) MMRefreshControl *refreshControl;
+@property (nonatomic, strong, nullable) MMRefreshControl *mmRefreshControl;
 
 // DFH: new to return the actual cell using a dataSourceIndexPath
 - (nullable UICollectionViewCell *)cellForItemAtDataSourceIndexPath:(NSIndexPath *)dataSourcendexPath;

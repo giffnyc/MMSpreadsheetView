@@ -249,7 +249,7 @@
 #pragma mark - MMSpreadsheetViewDataSource
 
 - (CGSize)spreadsheetView:(MMSpreadsheetView *)spreadsheetView sizeForItemAtIndexPath:(NSIndexPath *)indexPath {
-    CGFloat leftColumnWidth = 220.0f;
+    CGFloat leftColumnWidth = 120.0f;
     CGFloat topRowHeight = 150.0f;
     CGFloat gridCellWidth = 124.0f;
     CGFloat gridCellHeight = 103.0f;

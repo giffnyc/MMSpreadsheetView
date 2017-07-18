@@ -149,9 +149,9 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 		if(self.navigationController.navigationBar.isHidden) {
 			// Hysteresis - so its not showing/hiding all the time
 			self.navigationController.hidesBarsOnSwipe = _lowerRightCollectionView.contentOffset.y > 3 ? NO : hidesBarsOnSwipe;
-			[_refreshControl setHidden:YES];
+			[_mmRefreshControl setHidden:YES];
 		} else {
-			[_refreshControl setHidden:NO];
+			[_mmRefreshControl setHidden:NO];
 		}
 		break;
 	}
@@ -289,9 +289,9 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 
 	if(_wantRefreshControl) {
 		// 88 is the height of a standard UIRefreshControl. The left/right offsets are to hide the layer border (see initWithFrame)
-		self.refreshControl = [[MMRefreshControl alloc] initWithFrame:CGRectMake(-1, -88, _containerView.bounds.size.width+2, 88)];
-		_refreshControl.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-		[_containerView insertSubview:_refreshControl atIndex:0];
+		self.mmRefreshControl = [[MMRefreshControl alloc] initWithFrame:CGRectMake(-1, -88, _containerView.bounds.size.width+2, 88)];
+		_mmRefreshControl.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+		[_containerView insertSubview:_mmRefreshControl atIndex:0];
 	}
 }
 
@@ -963,7 +963,7 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 }
 
 - (void)checkRefreshControlWithOpen:(BOOL)andOpen {
-	CGRect r = _refreshControl.frame;
+	CGRect r = _mmRefreshControl.frame;
 	r.origin.y = (-self.contentOffset.y) - r.size.height;
 	if(andOpen && !_openingRefreshControl && (r.origin.y > -r.size.height/2)) {
 		startValue = r.origin.y;
@@ -974,8 +974,8 @@ static CGPoint maxContentOffset(UIScrollView *sv, UIEdgeInsets insets) {
 		if([_spreadsheetDelegate respondsToSelector:@selector(refreshControlActive:)]) {
 			dispatch_async(dispatch_get_main_queue(), ^
 				{
-					[self.refreshControl startRefresh];
-					[self.spreadsheetDelegate refreshControlActive:_refreshControl];
+					[self.mmRefreshControl startRefresh];
+					[self.spreadsheetDelegate refreshControlActive:_mmRefreshControl];
 				});
 		}
 	}
